@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Solar Street Light Monitoring System</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080e1a;--bg-card:#0d1526;--bg-card2:#111e35;
+  --border:rgba(255,255,255,0.07);--border-glow:rgba(251,176,59,0.25);
+  --amber:#fbb03b;--amber-dim:rgba(251,176,59,0.15);--amber-glow:rgba(251,176,59,0.4);
+  --solar:#ff8c00;--electric:#00d4ff;--electric-dim:rgba(0,212,255,0.12);
+  --green:#22c55e;--green-dim:rgba(34,197,94,0.15);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.15);
+  --blue:#3b82f6;--blue-dim:rgba(59,130,246,0.15);
+  --yellow:#facc15;--yellow-dim:rgba(250,204,21,0.15);
+  --navy-dim:rgba(30,58,95,0.3);
+  --txt:#f0f4ff;--txt2:#8b9bbf;--txt3:#4a5a7a;
+  --r:16px;--rs:10px;
+  --shadow:0 8px 32px rgba(0,0,0,0.45);
+  --sc:0 4px 24px rgba(0,0,0,0.35),0 0 0 1px var(--border);
+  --fd:'Space Grotesk',sans-serif;--fb:'Inter',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--fb);background:var(--bg);color:var(--txt);min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--amber-dim);border-radius:3px}
+
+/* HEADER */
+.hdr{position:sticky;top:0;z-index:100;height:68px;background:rgba(8,14,26,0.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);box-shadow:0 2px 20px rgba(0,0,0,0.5)}
+.hdr-in{max-width:1440px;margin:0 auto;height:100%;padding:0 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-ico{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--amber),var(--solar));display:flex;align-items:center;justify-content:center;font-size:19px;color:#fff;flex-shrink:0;box-shadow:0 0 20px var(--amber-glow)}
+.brand-txt h1{font-family:var(--fd);font-size:15px;font-weight:700;line-height:1.2;letter-spacing:-0.3px}
+.brand-txt span{font-size:10px;color:var(--txt2);letter-spacing:0.8px;text-transform:uppercase}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.conn-badge{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:var(--bg-card);border:1px solid var(--border);font-size:11px;font-weight:500;color:var(--txt2);transition:all .3s}
+.conn-badge.ok{border-color:rgba(34,197,94,0.4);color:var(--green)}
+.conn-badge.ok .cdot{background:var(--green);box-shadow:0 0 8px var(--green)}
+.conn-badge.err{border-color:rgba(239,68,68,0.4);color:var(--red)}
+.cdot{width:7px;height:7px;border-radius:50%;background:var(--txt3);animation:pulse 2s infinite;transition:all .3s}
+.hdr-time{font-family:var(--fd);font-size:13px;font-weight:600;color:var(--amber);letter-spacing:1px;display:none}
+@media(min-width:560px){.hdr-time{display:block}}
+
+/* MAIN */
+.main{flex:1;max-width:1440px;width:100%;margin:0 auto;padding:20px 16px 40px;display:flex;flex-direction:column;gap:20px}
+
+/* SUMMARY STRIP */
+.strip{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:700px){.strip{grid-template-columns:repeat(4,1fr)}}
+.sc-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;display:flex;align-items:center;gap:10px;transition:border-color .3s}
+.sc-card:hover{border-color:var(--border-glow)}
+.sc-card>i{font-size:18px;color:var(--amber);width:24px;text-align:center;flex-shrink:0}
+.sc-card>div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.sl{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3)}
+.sv{font-family:var(--fd);font-size:13px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* CARDS ROW */
+.crow{display:grid;grid-template-columns:1fr;gap:18px}
+@media(min-width:860px){.crow{grid-template-columns:1fr 1fr}}
+
+/* LIGHT CARD */
+.lcard{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sc);display:flex;flex-direction:column;overflow:hidden;transition:border-color .4s,box-shadow .4s;position:relative;animation:fadeIn .5s ease both}
+.lcard::before{content:'';position:absolute;inset:0;border-radius:var(--r);background:linear-gradient(135deg,rgba(251,176,59,0.03),transparent 60%);pointer-events:none}
+.lcard.c-on{border-color:rgba(34,197,94,0.35);box-shadow:var(--sc),0 0 30px rgba(34,197,94,0.08)}
+.lcard.c-off{border-color:rgba(239,68,68,0.3)}
+.lcard.c-auto{border-color:rgba(59,130,246,0.35);box-shadow:var(--sc),0 0 30px rgba(59,130,246,0.08)}
+
+.ch{padding:18px 18px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.ctg{display:flex;align-items:center;gap:10px}
+.lnum{font-family:var(--fd);font-size:30px;font-weight:800;color:var(--amber);opacity:.22;line-height:1;letter-spacing:-2px;flex-shrink:0}
+.ctg h2{font-family:var(--fd);font-size:15px;font-weight:700;line-height:1.2}
+.cloc{font-size:10px;color:var(--txt3);margin-top:3px;display:flex;align-items:center;gap:3px}
+.cloc i{color:var(--amber);font-size:9px}
+
+.spill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:var(--bg-card2);border:1px solid var(--border);font-size:11px;font-weight:600;letter-spacing:.4px;white-space:nowrap;transition:all .3s}
+.pdot{width:6px;height:6px;border-radius:50%;background:var(--txt3);transition:all .3s}
+.spill.p-on{background:var(--green-dim);border-color:rgba(34,197,94,0.35);color:var(--green)}
+.spill.p-on .pdot{background:var(--green);box-shadow:0 0 7px var(--green)}
+.spill.p-off{background:var(--red-dim);border-color:rgba(239,68,68,0.35);color:var(--red)}
+.spill.p-off .pdot{background:var(--red)}
+.spill.p-auto{background:var(--blue-dim);border-color:rgba(59,130,246,0.35);color:var(--blue)}
+.spill.p-auto .pdot{background:var(--blue);box-shadow:0 0 7px var(--blue)}
+
+.cb{padding:18px;display:flex;align-items:center;gap:18px;flex:1}
+.srow{display:flex;flex-direction:column;gap:12px;flex:1}
+.si{display:flex;flex-direction:column;gap:2px}
+.slb{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3)}
+.svl{font-family:var(--fd);font-size:14px;font-weight:600;color:var(--txt)}
+
+.bwrap{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0}
+.bulb{position:relative;width:68px;height:68px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--bg-card2);border:2px solid var(--border);transition:all .4s}
+.bulb i{font-size:28px;color:var(--txt3);position:relative;z-index:1;transition:all .4s}
+.bglw{position:absolute;inset:0;border-radius:50%;opacity:0;transition:opacity .5s}
+.bulb.on i{color:var(--yellow)}
+.bulb.on{border-color:rgba(250,204,21,0.5)}
+.bulb.on .bglw{opacity:1;background:radial-gradient(circle,rgba(250,204,21,0.3),transparent 70%);animation:glowp 2s ease-in-out infinite}
+.bulb.off i{color:#1e2a3a}
+.bulb.auto i{color:var(--blue)}
+.bulb.auto{border-color:rgba(59,130,246,0.4)}
+.bulb.auto .bglw{opacity:1;background:radial-gradient(circle,rgba(59,130,246,0.2),transparent 70%);animation:glowp 3s ease-in-out infinite}
+.blbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--txt3);font-weight:500}
+
+.cctrl{padding:0 18px 18px}
+.ctitle{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--txt3);margin-bottom:8px}
+.bgrp{display:flex;gap:7px}
+.cbtn{flex:1;padding:9px 4px;border-radius:var(--rs);border:1px solid transparent;font-family:var(--fb);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .2s;letter-spacing:.3px}
+.cbtn:active{transform:scale(0.95)}
+.bon{background:var(--green-dim);border-color:rgba(34,197,94,0.35);color:var(--green)}
+.bon:hover{background:rgba(34,197,94,0.25);box-shadow:0 0 14px rgba(34,197,94,0.2)}
+.boff{background:var(--red-dim);border-color:rgba(239,68,68,0.35);color:var(--red)}
+.boff:hover{background:rgba(239,68,68,0.25);box-shadow:0 0 14px rgba(239,68,68,0.2)}
+.bauto{background:var(--blue-dim);border-color:rgba(59,130,246,0.35);color:var(--blue)}
+.bauto:hover{background:rgba(59,130,246,0.25);box-shadow:0 0 14px rgba(59,130,246,0.2)}
+
+.cfoot{padding:9px 18px;background:rgba(255,255,255,0.02);border-top:1px solid var(--border);display:flex;align-items:center;gap:5px;font-size:10px;color:var(--txt3)}
+.cfoot i{color:var(--amber);font-size:9px}
+
+/* BOTTOM */
+.bot{display:grid;grid-template-columns:1fr;gap:18px}
+@media(min-width:1000px){.bot{grid-template-columns:1fr 360px}}
+
+/* PANEL */
+.panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--sc)}
+.ph{display:flex;align-items:center;gap:9px;padding:16px 18px;border-bottom:1px solid var(--border)}
+.ph i{color:var(--amber);font-size:15px}
+.ph h3{font-family:var(--fd);font-size:13px;font-weight:600;flex:1}
+.pbadge{font-size:10px;text-transform:uppercase;letter-spacing:1px;padding:3px 8px;border-radius:999px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:var(--green);font-weight:600}
+
+#map{height:380px;width:100%;background:#0a1525}
+@media(min-width:700px){#map{height:440px}}
+
+.mleg{padding:10px 18px;display:flex;gap:16px;flex-wrap:wrap;border-top:1px solid var(--border)}
+.li{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--txt2)}
+.ld{width:9px;height:9px;border-radius:50%}
+.ld-on{background:var(--green);box-shadow:0 0 5px var(--green)}
+.ld-off{background:var(--red)}
+.ld-auto{background:var(--blue);box-shadow:0 0 5px var(--blue)}
+
+/* INFO PANEL */
+.ipanel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--sc);display:flex;flex-direction:column}
+.icard{padding:14px 18px;border-bottom:1px solid var(--border);transition:background .3s}
+.icard:last-child{border-bottom:none;flex:1}
+
+.dncard{display:flex;align-items:center;gap:12px}
+.dnico{width:50px;height:50px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;transition:all .4s;background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(250,204,21,0.25)}
+.dnico.night{background:var(--navy-dim);color:#93c5fd;border-color:rgba(147,197,253,0.3)}
+.dntxt{display:flex;flex-direction:column;gap:2px}
+.dnlbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3)}
+.dnval{font-family:var(--fd);font-size:19px;font-weight:700}
+
+.tscard{display:flex;align-items:center;gap:12px}
+.tsico{width:38px;height:38px;border-radius:9px;background:var(--electric-dim);border:1px solid rgba(0,212,255,0.2);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--electric);flex-shrink:0}
+.tstxt{display:flex;flex-direction:column;gap:2px}
+.tslbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3)}
+.tsval{font-size:12px;font-weight:600;color:var(--txt);word-break:break-all}
+
+.logcard{flex:1;display:flex;flex-direction:column;padding:0}
+.lgh{padding:12px 18px;display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;color:var(--txt2);border-bottom:1px solid var(--border)}
+.lgh i{color:var(--electric)}
+.alog{list-style:none;padding:6px 0;flex:1;max-height:190px;overflow-y:auto}
+.le{display:flex;align-items:baseline;gap:7px;padding:5px 18px;font-size:11px;border-left:3px solid transparent;transition:background .2s}
+.le:hover{background:rgba(255,255,255,0.02)}
+.le.l-info{border-left-color:var(--electric);color:var(--txt2)}
+.le.l-on{border-left-color:var(--green);color:var(--green)}
+.le.l-off{border-left-color:var(--red);color:#fc8080}
+.le.l-auto{border-left-color:var(--blue);color:#93c5fd}
+.le.l-cmd{border-left-color:var(--amber);color:var(--amber)}
+.lt{font-family:var(--fd);font-size:10px;color:var(--txt3);flex-shrink:0}
+
+/* FOOTER */
+footer{padding:14px 20px;border-top:1px solid var(--border);background:var(--bg-card);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:10px;color:var(--txt3)}
+footer i{color:var(--amber);margin-right:3px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:20px;background:var(--bg-card2);border:1px solid rgba(34,197,94,0.4);border-radius:var(--rs);padding:11px 18px;display:flex;align-items:center;gap:9px;font-size:12px;font-weight:500;color:var(--green);box-shadow:var(--shadow);transform:translateY(80px);opacity:0;transition:transform .35s cubic-bezier(.32,1.6,.68,1),opacity .3s;z-index:1000;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast i{font-size:15px}
+
+/* LEAFLET CUSTOM */
+.cmark{display:flex;flex-direction:column;align-items:center}
+.mpin{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.25)}
+.mpin i{transform:rotate(45deg);font-size:13px;color:#fff}
+.mlbl{margin-top:3px;font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.9);white-space:nowrap;font-family:'Space Grotesk',sans-serif;background:rgba(8,14,26,0.75);padding:2px 6px;border-radius:5px}
+.mk-on .mpin{background:linear-gradient(135deg,#22c55e,#16a34a)}
+.mk-off .mpin{background:linear-gradient(135deg,#ef4444,#b91c1c)}
+.mk-auto .mpin{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
+
+.leaflet-popup-content-wrapper{background:var(--bg-card2)!important;border:1px solid var(--border)!important;border-radius:var(--rs)!important;box-shadow:var(--shadow)!important;color:var(--txt)!important}
+.leaflet-popup-content{font-family:'Inter',sans-serif!important;font-size:12px!important;margin:11px 15px!important;line-height:1.7!important;color:var(--txt)!important}
+.leaflet-popup-tip{background:var(--bg-card2)!important}
+.ptitle{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;margin-bottom:5px;color:var(--amber)}
+.prow{display:flex;justify-content:space-between;gap:14px;padding:1px 0;font-size:11px;color:var(--txt2)}
+.prow strong{color:var(--txt)}
+
+/* ANIMATIONS */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes glowp{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.main>*{animation:fadeIn .45s ease both}
+.main>*:nth-child(1){animation-delay:.05s}
+.main>*:nth-child(2){animation-delay:.1s}
+.main>*:nth-child(3){animation-delay:.18s}
+.main>*:nth-child(4){animation-delay:.25s}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-in">
+    <div class="brand">
+      <div class="brand-ico"><i class="fa-solid fa-solar-panel"></i></div>
+      <div class="brand-txt">
+        <h1>Smart Solar Street Light</h1>
+        <span>Monitoring &amp; Control System</span>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="conn-badge" id="connBadge"><span class="cdot"></span><span id="connLbl">Connecting…</span></div>
+      <div class="hdr-time" id="hdrTime">--:--:--</div>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- SUMMARY STRIP -->
+  <section class="strip">
+    <div class="sc-card" id="sc0"><i class="fa-solid fa-circle-half-stroke"></i><div><span class="sl">Environment</span><span class="sv" id="sumDN">—</span></div></div>
+    <div class="sc-card"><i class="fa-solid fa-bolt"></i><div><span class="sl">Active Lights</span><span class="sv" id="sumAL">—</span></div></div>
+    <div class="sc-card"><i class="fa-solid fa-clock-rotate-left"></i><div><span class="sl">Last Update</span><span class="sv" id="sumLU">—</span></div></div>
+    <div class="sc-card"><i class="fa-solid fa-signal"></i><div><span class="sl">System</span><span class="sv" id="sumSS">Connecting</span></div></div>
+  </section>
+
+  <!-- LIGHT CARDS -->
+  <section class="crow">
+
+    <!-- CARD 1 -->
+    <div class="lcard" id="card1">
+      <div class="ch">
+        <div class="ctg">
+          <div class="lnum">01</div>
+          <div>
+            <h2>Street Light 1</h2>
+            <p class="cloc"><i class="fa-solid fa-location-dot"></i> Koovathur, Chennai</p>
+          </div>
+        </div>
+        <div class="spill" id="pill1"><span class="pdot" id="dot1"></span><span id="ptxt1">Loading…</span></div>
+      </div>
+      <div class="cb">
+        <div class="srow">
+          <div class="si"><span class="slb">Current Status</span><span class="svl" id="l1st">—</span></div>
+          <div class="si"><span class="slb">Control Mode</span><span class="svl" id="l1md">—</span></div>
+        </div>
+        <div class="bwrap">
+          <div class="bulb" id="b1"><div class="bglw"></div><i class="fa-solid fa-lightbulb"></i></div>
+          <span class="blbl" id="bl1">—</span>
+        </div>
+      </div>
+      <div class="cctrl">
+        <span class="ctitle">Manual Override</span>
+        <div class="bgrp">
+          <button class="cbtn bon"  onclick="setMode('streetLight1','FORCE_ON')"><i class="fa-solid fa-power-off"></i> ON</button>
+          <button class="cbtn boff" onclick="setMode('streetLight1','FORCE_OFF')"><i class="fa-solid fa-circle-xmark"></i> OFF</button>
+          <button class="cbtn bauto" onclick="setMode('streetLight1','AUTO')"><i class="fa-solid fa-wand-magic-sparkles"></i> AUTO</button>
+        </div>
+      </div>
+      <div class="cfoot"><i class="fa-solid fa-map-pin"></i><span>13.3571° N, 80.1428° E</span></div>
+    </div>
+
+    <!-- CARD 2 -->
+    <div class="lcard" id="card2">
+      <div class="ch">
+        <div class="ctg">
+          <div class="lnum">02</div>
+          <div>
+            <h2>Street Light 2</h2>
+            <p class="cloc"><i class="fa-solid fa-location-dot"></i> Tiruvallur District</p>
+          </div>
+        </div>
+        <div class="spill" id="pill2"><span class="pdot" id="dot2"></span><span id="ptxt2">Loading…</span></div>
+      </div>
+      <div class="cb">
+        <div class="srow">
+          <div class="si"><span class="slb">Current Status</span><span class="svl" id="l2st">—</span></div>
+          <div class="si"><span class="slb">Control Mode</span><span class="svl" id="l2md">—</span></div>
+        </div>
+        <div class="bwrap">
+          <div class="bulb" id="b2"><div class="bglw"></div><i class="fa-solid fa-lightbulb"></i></div>
+          <span class="blbl" id="bl2">—</span>
+        </div>
+      </div>
+      <div class="cctrl">
+        <span class="ctitle">Manual Override</span>
+        <div class="bgrp">
+          <button class="cbtn bon"  onclick="setMode('streetLight2','FORCE_ON')"><i class="fa-solid fa-power-off"></i> ON</button>
+          <button class="cbtn boff" onclick="setMode('streetLight2','FORCE_OFF')"><i class="fa-solid fa-circle-xmark"></i> OFF</button>
+          <button class="cbtn bauto" onclick="setMode('streetLight2','AUTO')"><i class="fa-solid fa-wand-magic-sparkles"></i> AUTO</button>
+        </div>
+      </div>
+      <div class="cfoot"><i class="fa-solid fa-map-pin"></i><span>13.3126° N, 79.8973° E</span></div>
+    </div>
+
+  </section>
+
+  <!-- BOTTOM -->
+  <section class="bot">
+
+    <!-- MAP -->
+    <div class="panel">
+      <div class="ph"><i class="fa-solid fa-map-location-dot"></i><h3>Live Location Map — Tamil Nadu</h3><span class="pbadge">Real-Time</span></div>
+      <div id="map"></div>
+      <div class="mleg">
+        <span class="li"><span class="ld ld-on"></span> Light ON</span>
+        <span class="li"><span class="ld ld-off"></span> Light OFF</span>
+        <span class="li"><span class="ld ld-auto"></span> AUTO Mode</span>
+      </div>
+    </div>
+
+    <!-- INFO -->
+    <div class="ipanel">
+      <div class="ph"><i class="fa-solid fa-circle-info"></i><h3>System Information</h3></div>
+
+      <!-- Day/Night -->
+      <div class="icard dncard" id="dnCard">
+        <div class="dnico" id="dnico"><i class="fa-solid fa-sun" id="dnicoEl"></i></div>
+        <div class="dntxt">
+          <span class="dnlbl">Environment State</span>
+          <span class="dnval" id="dnVal">Loading…</span>
+        </div>
+      </div>
+
+      <!-- Timestamp -->
+      <div class="icard tscard">
+        <div class="tsico"><i class="fa-solid fa-satellite-dish"></i></div>
+        <div class="tstxt">
+          <span class="tslbl">Last Firebase Update</span>
+          <span class="tsval" id="tsVal">Loading…</span>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div class="icard logcard">
+        <div class="lgh"><i class="fa-solid fa-terminal"></i><span>Activity Log</span></div>
+        <ul class="alog" id="alog">
+          <li class="le l-info"><span class="lt">--:--</span><span>Initialising system…</span></li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <span><i class="fa-solid fa-solar-panel"></i>Smart Solar Street Light Monitoring System</span>
+  <span>Firebase Realtime DB · Leaflet.js · GitHub Pages</span>
+</footer>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><i class="fa-solid fa-check-circle"></i><span id="toastMsg">Done!</span></div>
+
+<!-- ═══ SCRIPTS ═══ -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── FIREBASE INIT ────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyA5IjgS-x7SzzKQ3bxRAm3Jruow8Q8Zg8c",
+  authDomain:        "smart-solar-street-light-221a9.firebaseapp.com",
+  databaseURL:       "https://smart-solar-street-light-221a9-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "smart-solar-street-light-221a9",
+  storageBucket:     "smart-solar-street-light-221a9.firebasestorage.app",
+  messagingSenderId: "1008018383388",
+  appId:             "1:1008018383388:web:dc266ead19ad13294c75d9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ── STATE ────────────────────────────────────────────────────────
+const S = {
+  l1:{ status:null, mode:null },
+  l2:{ status:null, mode:null },
+  dayNight:null, ts:null
+};
+
+// ── MAP ──────────────────────────────────────────────────────────
+// Light 1 → 13.3571151, 80.1427711  (Koovathur, Chennai)
+// Light 2 → 13.312592,  79.897254   (Tiruvallur District)
+let map, m1, m2;
+
+function initMap(){
+  map = L.map("map",{ center:[13.335,80.020], zoom:10, zoomControl:true });
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains:"abcd", maxZoom:19
+  }).addTo(map);
+
+  m1 = makeMarker(13.3571151, 80.1427711, "Street Light 1", "Koovathur, Chennai",   "auto").addTo(map);
+  m2 = makeMarker(13.312592,  79.897254,  "Street Light 2", "Tiruvallur District", "auto").addTo(map);
+
+  map.fitBounds(
+    L.latLngBounds([13.3571151,80.1427711],[13.312592,79.897254]),
+    {padding:[60,60]}
+  );
+}
+
+function mkIcon(cls, label){
+  return L.divIcon({
+    className:"",
+    html:`<div class="cmark mk-${cls}"><div class="mpin"><i class="fa-solid fa-street-view"></i></div><div class="mlbl">${label}</div></div>`,
+    iconSize:[80,52], iconAnchor:[40,52], popupAnchor:[0,-52]
+  });
+}
+
+function makeMarker(lat,lng,title,loc,cls){
+  const mk = L.marker([lat,lng],{ icon: mkIcon(cls,title) });
+  mk.bindPopup(popupHTML(title,loc,lat,lng,"—","—"));
+  return mk;
+}
+
+function popupHTML(title,loc,lat,lng,st,md){
+  return `<div class="ptitle"><i class="fa-solid fa-lightbulb"></i> ${title}</div>
+  <div class="prow"><span>Location</span><strong>${loc}</strong></div>
+  <div class="prow"><span>Coords</span><strong>${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E</strong></div>
+  <div class="prow"><span>Status</span><strong>${st}</strong></div>
+  <div class="prow"><span>Mode</span><strong>${md}</strong></div>`;
+}
+
+function refreshMarker(num){
+  const isL1 = num===1;
+  const mk   = isL1 ? m1 : m2;
+  const lat  = isL1 ? 13.3571151 : 13.312592;
+  const lng  = isL1 ? 80.1427711 : 79.897254;
+  const title= isL1 ? "Street Light 1" : "Street Light 2";
+  const loc  = isL1 ? "Koovathur, Chennai" : "Tiruvallur District";
+  const d    = isL1 ? S.l1 : S.l2;
+  const cls  = resolveClass(d.status, d.mode);
+  if(!mk) return;
+  mk.setIcon(mkIcon(cls, title));
+  mk.setPopupContent(popupHTML(title,loc,lat,lng, d.status||"—", d.mode||"—"));
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────
+function resolveClass(status, mode){
+  if(mode==="FORCE_ON")  return "on";
+  if(mode==="FORCE_OFF") return "off";
+  if(status==="ON")      return "on";
+  if(status==="OFF")     return "off";
+  return "auto";
+}
+
+function updateCard(num, status, mode){
+  const cls = resolveClass(status, mode);
+  // pill
+  const pill = document.getElementById("pill"+num);
+  const txt  = document.getElementById("ptxt"+num);
+  pill.className = "spill p-"+cls;
+  txt.textContent = cls==="on"?"ON": cls==="off"?"OFF":"AUTO";
+  // stats
+  document.getElementById("l"+num+"st").textContent = status||"—";
+  document.getElementById("l"+num+"md").textContent = mode||"—";
+  // bulb
+  const bulb = document.getElementById("b"+num);
+  bulb.className = "bulb "+cls;
+  document.getElementById("bl"+num).textContent = cls.toUpperCase();
+  // card border
+  document.getElementById("card"+num).className = "lcard c-"+cls;
+  // summary
+  updateStrip();
+  // marker
+  refreshMarker(num);
+}
+
+function updateStrip(){
+  const c1 = resolveClass(S.l1.status, S.l1.mode);
+  const c2 = resolveClass(S.l2.status, S.l2.mode);
+  const act = [c1,c2].filter(c=>c==="on").length;
+  document.getElementById("sumAL").textContent = act+" / 2";
+  document.getElementById("sumSS").textContent = "Online";
+}
+
+function updateDN(val){
+  const night = (val||"").toString().toUpperCase()==="NIGHT";
+  document.getElementById("dnVal").textContent = night ? "🌙 Night" : "☀️ Day";
+  document.getElementById("sumDN").textContent = night ? "Night" : "Day";
+  document.getElementById("dnico").className   = "dnico"+(night?" night":"");
+  document.getElementById("dnicoEl").className = "fa-solid fa-"+(night?"moon":"sun");
+  document.getElementById("sc0").querySelector("i").className = "fa-solid fa-"+(night?"moon":"sun");
+}
+
+function updateTS(raw){
+  let d="—";
+  if(raw){
+    const dt = isNaN(raw) ? new Date(raw) : new Date(Number(raw));
+    d = isNaN(dt.getTime()) ? String(raw) :
+      dt.toLocaleString("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  }
+  document.getElementById("tsVal").textContent = d;
+  document.getElementById("sumLU").textContent = d==="—"?"—":d.slice(0,16)+"…";
+}
+
+// ── LOG ───────────────────────────────────────────────────────────
+function log(msg, type="info"){
+  const ul  = document.getElementById("alog");
+  const now = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  const li  = document.createElement("li");
+  li.className = "le l-"+type;
+  li.innerHTML = `<span class="lt">${now}</span><span>${msg}</span>`;
+  ul.insertBefore(li, ul.firstChild);
+  while(ul.children.length > 30) ul.removeChild(ul.lastChild);
+}
+
+// ── CLOCK ─────────────────────────────────────────────────────────
+function startClock(){
+  const tick=()=>{
+    document.getElementById("hdrTime").textContent =
+      new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit",timeZone:"Asia/Kolkata"});
+  };
+  tick(); setInterval(tick,1000);
+}
+
+// ── CONNECTION BADGE ──────────────────────────────────────────────
+function setConn(s){
+  const b = document.getElementById("connBadge");
+  const l = document.getElementById("connLbl");
+  if(s==="ok"){  b.className="conn-badge ok";  l.textContent="Live"; }
+  else if(s==="err"){ b.className="conn-badge err"; l.textContent="Error"; }
+  else{ b.className="conn-badge"; l.textContent="Connecting…"; }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────
+let tTimer=null;
+function toast(msg, type="ok"){
+  const t  = document.getElementById("toast");
+  const m  = document.getElementById("toastMsg");
+  const ic = t.querySelector("i");
+  m.textContent  = msg;
+  ic.className   = type==="err" ? "fa-solid fa-circle-exclamation" : "fa-solid fa-check-circle";
+  t.style.borderColor = type==="err" ? "rgba(239,68,68,0.5)" : "rgba(34,197,94,0.4)";
+  t.style.color       = type==="err" ? "#ef4444" : "#22c55e";
+  t.classList.add("show");
+  clearTimeout(tTimer);
+  tTimer = setTimeout(()=>t.classList.remove("show"), 3000);
+}
+
+// ── FIREBASE LISTENERS ────────────────────────────────────────────
+// Listen to streetLight1 — fires immediately + on every change
+db.ref("streetLight1").on("value", snap=>{
+  const d = snap.val()||{};
+  S.l1.status = d.status||"—";
+  S.l1.mode   = d.mode  ||"—";
+  updateCard(1, S.l1.status, S.l1.mode);
+  log("Light 1 → status:"+S.l1.status+" mode:"+S.l1.mode, resolveClass(S.l1.status,S.l1.mode));
+  setConn("ok");
+}, err=>{ log("L1 error: "+err.message,"off"); setConn("err"); });
+
+// Listen to streetLight2
+db.ref("streetLight2").on("value", snap=>{
+  const d = snap.val()||{};
+  S.l2.status = d.status||"—";
+  S.l2.mode   = d.mode  ||"—";
+  updateCard(2, S.l2.status, S.l2.mode);
+  log("Light 2 → status:"+S.l2.status+" mode:"+S.l2.mode, resolveClass(S.l2.status,S.l2.mode));
+  setConn("ok");
+}, err=>{ log("L2 error: "+err.message,"off"); setConn("err"); });
+
+// Listen to system/dayNight
+db.ref("system/dayNight").on("value", snap=>{
+  S.dayNight = snap.val();
+  updateDN(S.dayNight);
+  log("Day/Night → "+(S.dayNight||"unknown"),"info");
+}, err=>log("dayNight error: "+err.message,"off"));
+
+// Listen to system/timestamp
+db.ref("system/timestamp").on("value", snap=>{
+  S.ts = snap.val();
+  updateTS(S.ts);
+}, err=>log("timestamp error: "+err.message,"off"));
+
+// Firebase connection state
+db.ref(".info/connected").on("value", snap=>{
+  if(snap.val()===true){ setConn("ok"); log("Connected to Firebase","info"); }
+  else{ setConn("err"); log("Disconnected — retrying…","off"); }
+});
+
+// ── WRITE COMMAND ─────────────────────────────────────────────────
+// Called by ON / OFF / AUTO buttons
+// Writes mode value to Firebase: FORCE_ON | FORCE_OFF | AUTO
+function setMode(path, val){
+  db.ref(path+"/mode").set(val)
+    .then(()=>{
+      const lbl = path==="streetLight1"?"Light 1":"Light 2";
+      const pr  = val==="FORCE_ON"?"Forced ON": val==="FORCE_OFF"?"Forced OFF":"Set AUTO";
+      toast(lbl+": "+pr,"ok");
+      log("CMD → "+lbl+" = "+val,"cmd");
+    })
+    .catch(err=>{ toast("Failed: "+err.message,"err"); log("Write error: "+err.message,"off"); });
+}
+
+// ── BOOT ──────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded",()=>{
+  startClock();
+  initMap();
+  log("System initialised — listening to Firebase…","info");
+});
+</script>
+</body>
+</html>
