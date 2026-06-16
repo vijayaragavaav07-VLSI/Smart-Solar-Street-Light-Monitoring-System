@@ -1,377 +1,1119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Smart Solar Street Light Monitoring System</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<!-- Firebase CDN -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+<!-- Leaflet CSS & JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#080e1a;--bg-card:#0d1526;--bg-card2:#111e35;
-  --border:rgba(255,255,255,0.07);--border-glow:rgba(251,176,59,0.25);
-  --amber:#fbb03b;--amber-dim:rgba(251,176,59,0.15);--amber-glow:rgba(251,176,59,0.4);
-  --solar:#ff8c00;--electric:#00d4ff;--electric-dim:rgba(0,212,255,0.12);
-  --green:#22c55e;--green-dim:rgba(34,197,94,0.15);
-  --red:#ef4444;--red-dim:rgba(239,68,68,0.15);
-  --blue:#3b82f6;--blue-dim:rgba(59,130,246,0.15);
-  --yellow:#facc15;--yellow-dim:rgba(250,204,21,0.15);
-  --navy-dim:rgba(30,58,95,0.3);
-  --txt:#f0f4ff;--txt2:#8b9bbf;--txt3:#4a5a7a;
-  --r:16px;--rs:10px;
-  --shadow:0 8px 32px rgba(0,0,0,0.45);
-  --sc:0 4px 24px rgba(0,0,0,0.35),0 0 0 1px var(--border);
-  --fd:'Space Grotesk',sans-serif;--fb:'Inter',sans-serif;
-}
-html{scroll-behavior:smooth}
-body{font-family:var(--fb);background:var(--bg);color:var(--txt);min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
-::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--amber-dim);border-radius:3px}
+  /* ── DESIGN TOKENS ─────────────────────────────── */
+  :root {
+    --bg-void:      #020d1f;
+    --bg-deep:      #050f24;
+    --bg-panel:     #071428;
+    --grid-line:    rgba(0,180,255,0.07);
 
-/* HEADER */
-.hdr{position:sticky;top:0;z-index:100;height:68px;background:rgba(8,14,26,0.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);box-shadow:0 2px 20px rgba(0,0,0,0.5)}
-.hdr-in{max-width:1440px;margin:0 auto;height:100%;padding:0 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{display:flex;align-items:center;gap:12px}
-.brand-ico{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--amber),var(--solar));display:flex;align-items:center;justify-content:center;font-size:19px;color:#fff;flex-shrink:0;box-shadow:0 0 20px var(--amber-glow)}
-.brand-txt h1{font-family:var(--fd);font-size:15px;font-weight:700;line-height:1.2;letter-spacing:-0.3px}
-.brand-txt span{font-size:10px;color:var(--txt2);letter-spacing:0.8px;text-transform:uppercase}
-.hdr-right{display:flex;align-items:center;gap:12px}
-.conn-badge{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:var(--bg-card);border:1px solid var(--border);font-size:11px;font-weight:500;color:var(--txt2);transition:all .3s}
-.conn-badge.ok{border-color:rgba(34,197,94,0.4);color:var(--green)}
-.conn-badge.ok .cdot{background:var(--green);box-shadow:0 0 8px var(--green)}
-.conn-badge.err{border-color:rgba(239,68,68,0.4);color:var(--red)}
-.cdot{width:7px;height:7px;border-radius:50%;background:var(--txt3);animation:pulse 2s infinite;transition:all .3s}
-.hdr-time{font-family:var(--fd);font-size:13px;font-weight:600;color:var(--amber);letter-spacing:1px;display:none}
-@media(min-width:560px){.hdr-time{display:block}}
+    --cyan:         #00d4ff;
+    --cyan-dim:     rgba(0,212,255,0.15);
+    --cyan-glow:    rgba(0,212,255,0.35);
+    --solar:        #ffc300;
+    --solar-dim:    rgba(255,195,0,0.15);
+    --green:        #00e676;
+    --green-dim:    rgba(0,230,118,0.15);
+    --red:          #ff3d5a;
+    --red-dim:      rgba(255,61,90,0.15);
+    --purple:       #7c4dff;
+    --purple-dim:   rgba(124,77,255,0.15);
 
-/* MAIN */
-.main{flex:1;max-width:1440px;width:100%;margin:0 auto;padding:20px 16px 40px;display:flex;flex-direction:column;gap:20px}
+    --glass-bg:     rgba(7,20,40,0.75);
+    --glass-border: rgba(0,212,255,0.18);
+    --glass-blur:   blur(18px);
 
-/* SUMMARY STRIP */
-.strip{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-@media(min-width:700px){.strip{grid-template-columns:repeat(4,1fr)}}
-.sc-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;display:flex;align-items:center;gap:10px;transition:border-color .3s}
-.sc-card:hover{border-color:var(--border-glow)}
-.sc-card>i{font-size:18px;color:var(--amber);width:24px;text-align:center;flex-shrink:0}
-.sc-card>div{display:flex;flex-direction:column;gap:1px;min-width:0}
-.sl{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3)}
-.sv{font-family:var(--fd);font-size:13px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    --text-prime:   #e8f4ff;
+    --text-sub:     #7ea8c9;
+    --text-dim:     #3a5872;
 
-/* CARDS ROW */
-.crow{display:grid;grid-template-columns:1fr;gap:18px}
-@media(min-width:860px){.crow{grid-template-columns:1fr 1fr}}
+    --font-display: 'Orbitron', monospace;
+    --font-body:    'Inter', sans-serif;
+    --font-mono:    'JetBrains Mono', monospace;
 
-/* LIGHT CARD */
-.lcard{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sc);display:flex;flex-direction:column;overflow:hidden;transition:border-color .4s,box-shadow .4s;position:relative;animation:fadeIn .5s ease both}
-.lcard::before{content:'';position:absolute;inset:0;border-radius:var(--r);background:linear-gradient(135deg,rgba(251,176,59,0.03),transparent 60%);pointer-events:none}
-.lcard.c-on{border-color:rgba(34,197,94,0.35);box-shadow:var(--sc),0 0 30px rgba(34,197,94,0.08)}
-.lcard.c-off{border-color:rgba(239,68,68,0.3)}
-.lcard.c-auto{border-color:rgba(59,130,246,0.35);box-shadow:var(--sc),0 0 30px rgba(59,130,246,0.08)}
+    --radius-card:  16px;
+    --radius-btn:   10px;
+    --transition:   0.25s cubic-bezier(.4,0,.2,1);
+  }
 
-.ch{padding:18px 18px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.ctg{display:flex;align-items:center;gap:10px}
-.lnum{font-family:var(--fd);font-size:30px;font-weight:800;color:var(--amber);opacity:.22;line-height:1;letter-spacing:-2px;flex-shrink:0}
-.ctg h2{font-family:var(--fd);font-size:15px;font-weight:700;line-height:1.2}
-.cloc{font-size:10px;color:var(--txt3);margin-top:3px;display:flex;align-items:center;gap:3px}
-.cloc i{color:var(--amber);font-size:9px}
+  /* ── RESET & BASE ──────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-.spill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:var(--bg-card2);border:1px solid var(--border);font-size:11px;font-weight:600;letter-spacing:.4px;white-space:nowrap;transition:all .3s}
-.pdot{width:6px;height:6px;border-radius:50%;background:var(--txt3);transition:all .3s}
-.spill.p-on{background:var(--green-dim);border-color:rgba(34,197,94,0.35);color:var(--green)}
-.spill.p-on .pdot{background:var(--green);box-shadow:0 0 7px var(--green)}
-.spill.p-off{background:var(--red-dim);border-color:rgba(239,68,68,0.35);color:var(--red)}
-.spill.p-off .pdot{background:var(--red)}
-.spill.p-auto{background:var(--blue-dim);border-color:rgba(59,130,246,0.35);color:var(--blue)}
-.spill.p-auto .pdot{background:var(--blue);box-shadow:0 0 7px var(--blue)}
+  html { scroll-behavior: smooth; }
 
-.cb{padding:18px;display:flex;align-items:center;gap:18px;flex:1}
-.srow{display:flex;flex-direction:column;gap:12px;flex:1}
-.si{display:flex;flex-direction:column;gap:2px}
-.slb{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3)}
-.svl{font-family:var(--fd);font-size:14px;font-weight:600;color:var(--txt)}
+  body {
+    font-family: var(--font-body);
+    background: var(--bg-void);
+    color: var(--text-prime);
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-size: 15px;
+    line-height: 1.6;
+  }
 
-.bwrap{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0}
-.bulb{position:relative;width:68px;height:68px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--bg-card2);border:2px solid var(--border);transition:all .4s}
-.bulb i{font-size:28px;color:var(--txt3);position:relative;z-index:1;transition:all .4s}
-.bglw{position:absolute;inset:0;border-radius:50%;opacity:0;transition:opacity .5s}
-.bulb.on i{color:var(--yellow)}
-.bulb.on{border-color:rgba(250,204,21,0.5)}
-.bulb.on .bglw{opacity:1;background:radial-gradient(circle,rgba(250,204,21,0.3),transparent 70%);animation:glowp 2s ease-in-out infinite}
-.bulb.off i{color:#1e2a3a}
-.bulb.auto i{color:var(--blue)}
-.bulb.auto{border-color:rgba(59,130,246,0.4)}
-.bulb.auto .bglw{opacity:1;background:radial-gradient(circle,rgba(59,130,246,0.2),transparent 70%);animation:glowp 3s ease-in-out infinite}
-.blbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--txt3);font-weight:500}
+  /* ── ANIMATED GRID BACKGROUND ──────────────────── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-.cctrl{padding:0 18px 18px}
-.ctitle{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--txt3);margin-bottom:8px}
-.bgrp{display:flex;gap:7px}
-.cbtn{flex:1;padding:9px 4px;border-radius:var(--rs);border:1px solid transparent;font-family:var(--fb);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .2s;letter-spacing:.3px}
-.cbtn:active{transform:scale(0.95)}
-.bon{background:var(--green-dim);border-color:rgba(34,197,94,0.35);color:var(--green)}
-.bon:hover{background:rgba(34,197,94,0.25);box-shadow:0 0 14px rgba(34,197,94,0.2)}
-.boff{background:var(--red-dim);border-color:rgba(239,68,68,0.35);color:var(--red)}
-.boff:hover{background:rgba(239,68,68,0.25);box-shadow:0 0 14px rgba(239,68,68,0.2)}
-.bauto{background:var(--blue-dim);border-color:rgba(59,130,246,0.35);color:var(--blue)}
-.bauto:hover{background:rgba(59,130,246,0.25);box-shadow:0 0 14px rgba(59,130,246,0.2)}
+  body::after {
+    content: '';
+    position: fixed;
+    top: -40%;
+    left: -20%;
+    width: 80%;
+    height: 80%;
+    background: radial-gradient(ellipse, rgba(0,100,200,0.12) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    animation: ambientPulse 8s ease-in-out infinite alternate;
+  }
 
-.cfoot{padding:9px 18px;background:rgba(255,255,255,0.02);border-top:1px solid var(--border);display:flex;align-items:center;gap:5px;font-size:10px;color:var(--txt3)}
-.cfoot i{color:var(--amber);font-size:9px}
+  @keyframes ambientPulse {
+    from { opacity: 0.5; transform: scale(1); }
+    to   { opacity: 1;   transform: scale(1.1); }
+  }
 
-/* BOTTOM */
-.bot{display:grid;grid-template-columns:1fr;gap:18px}
-@media(min-width:1000px){.bot{grid-template-columns:1fr 360px}}
+  /* ── LOADING SCREEN ────────────────────────────── */
+  #loading-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-void);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
+  }
 
-/* PANEL */
-.panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--sc)}
-.ph{display:flex;align-items:center;gap:9px;padding:16px 18px;border-bottom:1px solid var(--border)}
-.ph i{color:var(--amber);font-size:15px}
-.ph h3{font-family:var(--fd);font-size:13px;font-weight:600;flex:1}
-.pbadge{font-size:10px;text-transform:uppercase;letter-spacing:1px;padding:3px 8px;border-radius:999px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:var(--green);font-weight:600}
+  #loading-screen.hidden { opacity: 0; visibility: hidden; }
 
-#map{height:380px;width:100%;background:#0a1525}
-@media(min-width:700px){#map{height:440px}}
+  .loading-logo {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--cyan), var(--solar));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    letter-spacing: 0.04em;
+    animation: fadeSlideUp 0.8s ease both;
+  }
 
-.mleg{padding:10px 18px;display:flex;gap:16px;flex-wrap:wrap;border-top:1px solid var(--border)}
-.li{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--txt2)}
-.ld{width:9px;height:9px;border-radius:50%}
-.ld-on{background:var(--green);box-shadow:0 0 5px var(--green)}
-.ld-off{background:var(--red)}
-.ld-auto{background:var(--blue);box-shadow:0 0 5px var(--blue)}
+  .loading-solar-icon {
+    width: 80px; height: 80px;
+    position: relative;
+    animation: solarSpin 3s linear infinite;
+  }
 
-/* INFO PANEL */
-.ipanel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--sc);display:flex;flex-direction:column}
-.icard{padding:14px 18px;border-bottom:1px solid var(--border);transition:background .3s}
-.icard:last-child{border-bottom:none;flex:1}
+  .loading-solar-icon svg { width: 100%; height: 100%; }
 
-.dncard{display:flex;align-items:center;gap:12px}
-.dnico{width:50px;height:50px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;transition:all .4s;background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(250,204,21,0.25)}
-.dnico.night{background:var(--navy-dim);color:#93c5fd;border-color:rgba(147,197,253,0.3)}
-.dntxt{display:flex;flex-direction:column;gap:2px}
-.dnlbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3)}
-.dnval{font-family:var(--fd);font-size:19px;font-weight:700}
+  @keyframes solarSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
 
-.tscard{display:flex;align-items:center;gap:12px}
-.tsico{width:38px;height:38px;border-radius:9px;background:var(--electric-dim);border:1px solid rgba(0,212,255,0.2);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--electric);flex-shrink:0}
-.tstxt{display:flex;flex-direction:column;gap:2px}
-.tslbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3)}
-.tsval{font-size:12px;font-weight:600;color:var(--txt);word-break:break-all}
+  .loading-bar-wrap {
+    width: 260px;
+    height: 4px;
+    background: rgba(0,212,255,0.1);
+    border-radius: 99px;
+    overflow: hidden;
+  }
 
-.logcard{flex:1;display:flex;flex-direction:column;padding:0}
-.lgh{padding:12px 18px;display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;color:var(--txt2);border-bottom:1px solid var(--border)}
-.lgh i{color:var(--electric)}
-.alog{list-style:none;padding:6px 0;flex:1;max-height:190px;overflow-y:auto}
-.le{display:flex;align-items:baseline;gap:7px;padding:5px 18px;font-size:11px;border-left:3px solid transparent;transition:background .2s}
-.le:hover{background:rgba(255,255,255,0.02)}
-.le.l-info{border-left-color:var(--electric);color:var(--txt2)}
-.le.l-on{border-left-color:var(--green);color:var(--green)}
-.le.l-off{border-left-color:var(--red);color:#fc8080}
-.le.l-auto{border-left-color:var(--blue);color:#93c5fd}
-.le.l-cmd{border-left-color:var(--amber);color:var(--amber)}
-.lt{font-family:var(--fd);font-size:10px;color:var(--txt3);flex-shrink:0}
+  .loading-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), var(--solar));
+    border-radius: 99px;
+    animation: loadProgress 2.2s ease forwards;
+  }
 
-/* FOOTER */
-footer{padding:14px 20px;border-top:1px solid var(--border);background:var(--bg-card);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:10px;color:var(--txt3)}
-footer i{color:var(--amber);margin-right:3px}
+  @keyframes loadProgress {
+    from { width: 0; }
+    to   { width: 100%; }
+  }
 
-/* TOAST */
-.toast{position:fixed;bottom:24px;right:20px;background:var(--bg-card2);border:1px solid rgba(34,197,94,0.4);border-radius:var(--rs);padding:11px 18px;display:flex;align-items:center;gap:9px;font-size:12px;font-weight:500;color:var(--green);box-shadow:var(--shadow);transform:translateY(80px);opacity:0;transition:transform .35s cubic-bezier(.32,1.6,.68,1),opacity .3s;z-index:1000;pointer-events:none}
-.toast.show{transform:translateY(0);opacity:1}
-.toast i{font-size:15px}
+  .loading-status {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-sub);
+    letter-spacing: 0.06em;
+    animation: blink 1s step-end infinite;
+  }
 
-/* LEAFLET CUSTOM */
-.cmark{display:flex;flex-direction:column;align-items:center}
-.mpin{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.25)}
-.mpin i{transform:rotate(45deg);font-size:13px;color:#fff}
-.mlbl{margin-top:3px;font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.9);white-space:nowrap;font-family:'Space Grotesk',sans-serif;background:rgba(8,14,26,0.75);padding:2px 6px;border-radius:5px}
-.mk-on .mpin{background:linear-gradient(135deg,#22c55e,#16a34a)}
-.mk-off .mpin{background:linear-gradient(135deg,#ef4444,#b91c1c)}
-.mk-auto .mpin{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
+  @keyframes blink { 50% { opacity: 0; } }
 
-.leaflet-popup-content-wrapper{background:var(--bg-card2)!important;border:1px solid var(--border)!important;border-radius:var(--rs)!important;box-shadow:var(--shadow)!important;color:var(--txt)!important}
-.leaflet-popup-content{font-family:'Inter',sans-serif!important;font-size:12px!important;margin:11px 15px!important;line-height:1.7!important;color:var(--txt)!important}
-.leaflet-popup-tip{background:var(--bg-card2)!important}
-.ptitle{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;margin-bottom:5px;color:var(--amber)}
-.prow{display:flex;justify-content:space-between;gap:14px;padding:1px 0;font-size:11px;color:var(--txt2)}
-.prow strong{color:var(--txt)}
+  /* ── LAYOUT ────────────────────────────────────── */
+  #app {
+    position: relative;
+    z-index: 1;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+  }
 
-/* ANIMATIONS */
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-@keyframes glowp{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
-@keyframes fadeIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
-.main>*{animation:fadeIn .45s ease both}
-.main>*:nth-child(1){animation-delay:.05s}
-.main>*:nth-child(2){animation-delay:.1s}
-.main>*:nth-child(3){animation-delay:.18s}
-.main>*:nth-child(4){animation-delay:.25s}
+  /* ── HEADER ────────────────────────────────────── */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 0 20px;
+    margin: 0 -20px;
+    background: linear-gradient(180deg, rgba(2,13,31,0.98) 80%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 18px 0 16px;
+    border-bottom: 1px solid var(--glass-border);
+    flex-wrap: wrap;
+  }
+
+  .logo-mark {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, #1a3a6e, #0a1f44);
+    border: 1.5px solid var(--cyan);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 0 20px rgba(0,212,255,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .logo-mark svg { width: 26px; height: 26px; }
+
+  .header-titles { flex: 1; min-width: 200px; }
+
+  .header-titles h1 {
+    font-family: var(--font-display);
+    font-size: clamp(0.85rem, 2vw, 1.1rem);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1.25;
+    background: linear-gradient(135deg, var(--cyan) 20%, #fff 60%, var(--solar) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header-titles p {
+    font-size: 0.72rem;
+    color: var(--text-sub);
+    letter-spacing: 0.04em;
+    margin-top: 2px;
+    font-family: var(--font-mono);
+  }
+
+  .header-status-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 99px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+    border: 1px solid transparent;
+    transition: var(--transition);
+  }
+
+  .status-pill.connected {
+    background: var(--green-dim);
+    border-color: rgba(0,230,118,0.3);
+    color: var(--green);
+  }
+
+  .status-pill.disconnected {
+    background: var(--red-dim);
+    border-color: rgba(255,61,90,0.3);
+    color: var(--red);
+  }
+
+  .status-pill.connecting {
+    background: var(--solar-dim);
+    border-color: rgba(255,195,0,0.3);
+    color: var(--solar);
+  }
+
+  .pulse-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  .status-pill.connected .pulse-dot {
+    animation: dotPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes dotPulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,230,118,0.5); }
+    50%       { opacity: 0.7; box-shadow: 0 0 0 5px rgba(0,230,118,0); }
+  }
+
+  /* ── SECTION HEADERS ───────────────────────────── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 36px 0 20px;
+  }
+
+  .section-header .section-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .section-header .section-icon.cyan  { background: var(--cyan-dim); }
+  .section-header .section-icon.solar { background: var(--solar-dim); }
+  .section-header .section-icon.green { background: var(--green-dim); }
+  .section-header .section-icon.purple{ background: var(--purple-dim); }
+
+  .section-header h2 {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    color: var(--text-prime);
+  }
+
+  .section-header span {
+    font-size: 0.7rem;
+    color: var(--text-sub);
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+  }
+
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--glass-border), transparent);
+  }
+
+  /* ── GLASS CARD ────────────────────────────────── */
+  .card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-card);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.4), transparent);
+  }
+
+  .card:hover {
+    border-color: rgba(0,212,255,0.32);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,212,255,0.08);
+    transform: translateY(-2px);
+  }
+
+  /* ── OVERVIEW GRID ─────────────────────────────── */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .overview-card {
+    padding: 20px;
+  }
+
+  .overview-card .oc-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-sub);
+    font-family: var(--font-mono);
+    margin-bottom: 10px;
+  }
+
+  .overview-card .oc-value {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+
+  .overview-card .oc-sub {
+    font-size: 0.72rem;
+    color: var(--text-sub);
+    font-family: var(--font-mono);
+  }
+
+  .oc-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    letter-spacing: 0.05em;
+    margin-top: 8px;
+  }
+
+  .oc-indicator.on {
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(0,230,118,0.25);
+  }
+
+  .oc-indicator.off {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid rgba(255,61,90,0.25);
+  }
+
+  .oc-indicator.auto {
+    background: var(--cyan-dim);
+    color: var(--cyan);
+    border: 1px solid rgba(0,212,255,0.25);
+  }
+
+  .oc-indicator.night {
+    background: var(--purple-dim);
+    color: #b48eff;
+    border: 1px solid rgba(124,77,255,0.25);
+  }
+
+  .oc-indicator.day {
+    background: var(--solar-dim);
+    color: var(--solar);
+    border: 1px solid rgba(255,195,0,0.25);
+  }
+
+  .oc-indicator .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: dotPulse 2s ease-in-out infinite;
+  }
+
+  .card-corner-gfx {
+    position: absolute;
+    bottom: -12px; right: -12px;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    opacity: 0.07;
+    pointer-events: none;
+  }
+
+  /* ── CONTROL PANEL ─────────────────────────────── */
+  .control-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .control-card {
+    padding: 24px;
+  }
+
+  .ctrl-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .ctrl-number {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--cyan-dim);
+    border: 1px solid rgba(0,212,255,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--cyan);
+    flex-shrink: 0;
+  }
+
+  .ctrl-title h3 {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--text-prime);
+  }
+
+  .ctrl-title .ctrl-badge {
+    margin-left: auto;
+    font-size: 0.65rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.05em;
+  }
+
+  .ctrl-current {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .ctrl-current .cc-label {
+    font-size: 0.68rem;
+    color: var(--text-sub);
+    font-family: var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .ctrl-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+
+  .ctrl-btn {
+    padding: 12px 8px;
+    border-radius: var(--radius-btn);
+    border: 1.5px solid;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    background: transparent;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ctrl-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .ctrl-btn:hover::after { opacity: 0.08; }
+  .ctrl-btn:active::after { opacity: 0.15; }
+  .ctrl-btn:active { transform: scale(0.97); }
+
+  .ctrl-btn svg { width: 18px; height: 18px; }
+
+  .ctrl-btn.on-btn  { border-color: var(--green); color: var(--green); }
+  .ctrl-btn.off-btn { border-color: var(--red);   color: var(--red); }
+  .ctrl-btn.auto-btn{ border-color: var(--cyan);  color: var(--cyan); }
+
+  .ctrl-btn.on-btn:hover   { background: var(--green-dim); box-shadow: 0 0 16px rgba(0,230,118,0.2); }
+  .ctrl-btn.off-btn:hover  { background: var(--red-dim);   box-shadow: 0 0 16px rgba(255,61,90,0.2); }
+  .ctrl-btn.auto-btn:hover { background: var(--cyan-dim);  box-shadow: 0 0 16px rgba(0,212,255,0.2); }
+
+  .ctrl-btn.active-state {
+    box-shadow: 0 0 20px currentColor;
+    opacity: 1;
+  }
+
+  .ctrl-btn.on-btn.active-state   { background: rgba(0,230,118,0.15); }
+  .ctrl-btn.off-btn.active-state  { background: rgba(255,61,90,0.15); }
+  .ctrl-btn.auto-btn.active-state { background: rgba(0,212,255,0.15); }
+
+  /* ── MAP ───────────────────────────────────────── */
+  #map {
+    height: 420px;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--glass-border);
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── CHARTS ────────────────────────────────────── */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+  }
+
+  .chart-card { padding: 22px; }
+
+  .chart-title {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    color: var(--text-prime);
+    margin-bottom: 4px;
+  }
+
+  .chart-subtitle {
+    font-size: 0.68rem;
+    color: var(--text-sub);
+    font-family: var(--font-mono);
+    margin-bottom: 18px;
+  }
+
+  .chart-wrap {
+    position: relative;
+    height: 220px;
+  }
+
+  /* ── TIMESTAMP ─────────────────────────────────── */
+  .timestamp-card {
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .ts-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: var(--solar-dim);
+    border: 1px solid rgba(255,195,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .ts-label {
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+    color: var(--text-sub);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  #last-update {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--solar);
+    letter-spacing: 0.03em;
+  }
+
+  /* ── FOOTER ────────────────────────────────────── */
+  footer {
+    margin-top: 48px;
+    padding: 28px 0 12px;
+    border-top: 1px solid var(--glass-border);
+  }
+
+  .footer-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .footer-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .footer-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 99px;
+    border: 1px solid var(--glass-border);
+    background: rgba(7,20,40,0.6);
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    color: var(--text-sub);
+    letter-spacing: 0.04em;
+    transition: var(--transition);
+  }
+
+  .footer-badge:hover { border-color: var(--cyan); color: var(--cyan); }
+
+  .footer-badge .fb-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: dotPulse 2s ease-in-out infinite;
+  }
+
+  .footer-copy {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── TOAST ─────────────────────────────────────── */
+  #toast-container {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 9000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 18px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    font-size: 0.8rem;
+    font-family: var(--font-body);
+    font-weight: 500;
+    max-width: 320px;
+    pointer-events: all;
+    animation: toastIn 0.35s cubic-bezier(.4,0,.2,1) forwards;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .toast.success { border-color: rgba(0,230,118,0.3); color: var(--green); }
+  .toast.error   { border-color: rgba(255,61,90,0.3);  color: var(--red); }
+  .toast.info    { border-color: rgba(0,212,255,0.3);  color: var(--cyan); }
+  .toast.warning { border-color: rgba(255,195,0,0.3);  color: var(--solar); }
+
+  .toast.out { animation: toastOut 0.3s ease forwards; }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes toastOut {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(30px); }
+  }
+
+  /* ── MISC UTILITIES ────────────────────────────── */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .anim-fade-up {
+    opacity: 0;
+    animation: fadeSlideUp 0.55s cubic-bezier(.4,0,.2,1) forwards;
+  }
+
+  /* Leaflet popup custom */
+  .leaflet-popup-content-wrapper {
+    background: #071428 !important;
+    border: 1px solid rgba(0,212,255,0.3) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+    color: #e8f4ff !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.82rem !important;
+  }
+
+  .leaflet-popup-tip { background: #071428 !important; }
+
+  .popup-inner { padding: 4px 2px; }
+  .popup-inner h4 {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #00d4ff;
+    margin-bottom: 8px;
+  }
+  .popup-inner p {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 4px 0;
+    color: #7ea8c9;
+    font-size: 0.75rem;
+  }
+  .popup-inner p strong { color: #e8f4ff; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #020d1f; }
+  ::-webkit-scrollbar-thumb { background: #1a3a5c; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #00d4ff; }
+
+  /* ── RESPONSIVE ────────────────────────────────── */
+  @media (max-width: 600px) {
+    #app { padding: 0 12px 40px; }
+    .header-inner { padding: 14px 0 12px; }
+    .overview-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .control-grid  { grid-template-columns: 1fr; }
+    .charts-grid   { grid-template-columns: 1fr; }
+    #map { height: 300px; }
+    .footer-inner { flex-direction: column; align-items: flex-start; }
+  }
+
+  @media (max-width: 360px) {
+    .overview-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── SCAN LINE EFFECT ──────────────────────────── */
+  .scanline-overlay {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 2;
+  }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header class="hdr">
-  <div class="hdr-in">
-    <div class="brand">
-      <div class="brand-ico"><i class="fa-solid fa-solar-panel"></i></div>
-      <div class="brand-txt">
+<!-- Scanline overlay -->
+<div class="scanline-overlay"></div>
+
+<!-- ── LOADING SCREEN ────────────────────────── -->
+<div id="loading-screen">
+  <div class="loading-solar-icon">
+    <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="40" cy="40" r="16" fill="none" stroke="#ffc300" stroke-width="3"/>
+      <line x1="40" y1="4"  x2="40" y2="18" stroke="#ffc300" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="40" y1="62" x2="40" y2="76" stroke="#ffc300" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="4"  y1="40" x2="18" y2="40" stroke="#ffc300" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="62" y1="40" x2="76" y2="40" stroke="#ffc300" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="14.9" y1="14.9" x2="24.6" y2="24.6" stroke="#ffc300" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="55.4" y1="55.4" x2="65.1" y2="65.1" stroke="#ffc300" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="65.1" y1="14.9" x2="55.4" y2="24.6" stroke="#ffc300" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="24.6" y1="55.4" x2="14.9" y2="65.1" stroke="#ffc300" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="loading-logo">Smart Solar Street Light<br>Monitoring System</div>
+  <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+  <div class="loading-status" id="loading-status-text">Connecting to Firebase…</div>
+</div>
+
+<!-- ── TOAST CONTAINER ───────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ── APP ──────────────────────────────────── -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-inner">
+      <div class="logo-mark">
+        <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 3 L23 22 L3 22 Z" fill="none" stroke="#ffc300" stroke-width="1.5" stroke-linejoin="round"/>
+          <circle cx="13" cy="12" r="3" fill="#00d4ff"/>
+          <line x1="13" y1="15" x2="13" y2="22" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="header-titles">
         <h1>Smart Solar Street Light</h1>
-        <span>Monitoring &amp; Control System</span>
+        <p>Monitoring &amp; Control System — Tamil Nadu</p>
+      </div>
+      <div class="header-status-group">
+        <div class="status-pill connecting" id="firebase-status-pill">
+          <span class="pulse-dot"></span>
+          <span id="firebase-status-text">Connecting</span>
+        </div>
+        <div class="status-pill" id="daynight-pill" style="background:var(--purple-dim);border-color:rgba(124,77,255,0.3);color:#b48eff;">
+          <span class="pulse-dot" style="background:currentColor"></span>
+          <span id="daynight-pill-text">–</span>
+        </div>
       </div>
     </div>
-    <div class="hdr-right">
-      <div class="conn-badge" id="connBadge"><span class="cdot"></span><span id="connLbl">Connecting…</span></div>
-      <div class="hdr-time" id="hdrTime">--:--:--</div>
+  </header>
+
+  <!-- ── SYSTEM OVERVIEW ──────────────────── -->
+  <div class="section-header anim-fade-up" style="animation-delay:0.1s">
+    <div class="section-icon cyan">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+        <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" stroke="#00d4ff" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h2>SYSTEM OVERVIEW</h2>
+    <span>Live sensor data</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="overview-grid">
+    <!-- Light 1 Status -->
+    <div class="card overview-card anim-fade-up" style="animation-delay:0.15s">
+      <div class="oc-label">Street Light 1</div>
+      <div class="oc-value" id="sl1-status-val" style="color:var(--text-sub)">—</div>
+      <div class="oc-sub">Power Status</div>
+      <div class="oc-indicator off" id="sl1-status-badge"><span class="dot"></span><span id="sl1-status-tag">UNKNOWN</span></div>
+      <div class="card-corner-gfx" style="background:var(--green)"></div>
+    </div>
+
+    <!-- Light 1 Mode -->
+    <div class="card overview-card anim-fade-up" style="animation-delay:0.2s">
+      <div class="oc-label">Light 1 Mode</div>
+      <div class="oc-value" id="sl1-mode-val" style="color:var(--cyan)">—</div>
+      <div class="oc-sub">Control Mode</div>
+      <div class="oc-indicator auto" id="sl1-mode-badge"><span class="dot"></span><span id="sl1-mode-tag">AUTO</span></div>
+      <div class="card-corner-gfx" style="background:var(--cyan)"></div>
+    </div>
+
+    <!-- Light 2 Status -->
+    <div class="card overview-card anim-fade-up" style="animation-delay:0.25s">
+      <div class="oc-label">Street Light 2</div>
+      <div class="oc-value" id="sl2-status-val" style="color:var(--text-sub)">—</div>
+      <div class="oc-sub">Power Status</div>
+      <div class="oc-indicator off" id="sl2-status-badge"><span class="dot"></span><span id="sl2-status-tag">UNKNOWN</span></div>
+      <div class="card-corner-gfx" style="background:var(--green)"></div>
+    </div>
+
+    <!-- Light 2 Mode -->
+    <div class="card overview-card anim-fade-up" style="animation-delay:0.3s">
+      <div class="oc-label">Light 2 Mode</div>
+      <div class="oc-value" id="sl2-mode-val" style="color:var(--cyan)">—</div>
+      <div class="oc-sub">Control Mode</div>
+      <div class="oc-indicator auto" id="sl2-mode-badge"><span class="dot"></span><span id="sl2-mode-tag">AUTO</span></div>
+      <div class="card-corner-gfx" style="background:var(--cyan)"></div>
+    </div>
+
+    <!-- Day / Night -->
+    <div class="card overview-card anim-fade-up" style="animation-delay:0.35s">
+      <div class="oc-label">Day / Night Status</div>
+      <div class="oc-value" id="daynight-val" style="color:#b48eff">—</div>
+      <div class="oc-sub">Ambient Light Sensor</div>
+      <div class="oc-indicator night" id="daynight-badge"><span class="dot"></span><span id="daynight-tag">—</span></div>
+      <div class="card-corner-gfx" style="background:var(--purple)"></div>
+    </div>
+
+    <!-- Last Update -->
+    <div class="card overview-card timestamp-card anim-fade-up" style="animation-delay:0.4s">
+      <div class="ts-icon">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" stroke="#ffc300" stroke-width="1.8"/>
+          <path d="M12 7v5l3 3" stroke="#ffc300" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="ts-label">Last Firebase Update</div>
+        <div id="last-update">Waiting for data…</div>
+      </div>
     </div>
   </div>
-</header>
 
-<!-- MAIN -->
-<main class="main">
-
-  <!-- SUMMARY STRIP -->
-  <section class="strip">
-    <div class="sc-card" id="sc0"><i class="fa-solid fa-circle-half-stroke"></i><div><span class="sl">Environment</span><span class="sv" id="sumDN">—</span></div></div>
-    <div class="sc-card"><i class="fa-solid fa-bolt"></i><div><span class="sl">Active Lights</span><span class="sv" id="sumAL">—</span></div></div>
-    <div class="sc-card"><i class="fa-solid fa-clock-rotate-left"></i><div><span class="sl">Last Update</span><span class="sv" id="sumLU">—</span></div></div>
-    <div class="sc-card"><i class="fa-solid fa-signal"></i><div><span class="sl">System</span><span class="sv" id="sumSS">Connecting</span></div></div>
-  </section>
-
-  <!-- LIGHT CARDS -->
-  <section class="crow">
-
-    <!-- CARD 1 -->
-    <div class="lcard" id="card1">
-      <div class="ch">
-        <div class="ctg">
-          <div class="lnum">01</div>
-          <div>
-            <h2>Street Light 1</h2>
-            <p class="cloc"><i class="fa-solid fa-location-dot"></i> Koovathur, Chennai</p>
-          </div>
-        </div>
-        <div class="spill" id="pill1"><span class="pdot" id="dot1"></span><span id="ptxt1">Loading…</span></div>
-      </div>
-      <div class="cb">
-        <div class="srow">
-          <div class="si"><span class="slb">Current Status</span><span class="svl" id="l1st">—</span></div>
-          <div class="si"><span class="slb">Control Mode</span><span class="svl" id="l1md">—</span></div>
-        </div>
-        <div class="bwrap">
-          <div class="bulb" id="b1"><div class="bglw"></div><i class="fa-solid fa-lightbulb"></i></div>
-          <span class="blbl" id="bl1">—</span>
-        </div>
-      </div>
-      <div class="cctrl">
-        <span class="ctitle">Manual Override</span>
-        <div class="bgrp">
-          <button class="cbtn bon"  onclick="setMode('streetLight1','FORCE_ON')"><i class="fa-solid fa-power-off"></i> ON</button>
-          <button class="cbtn boff" onclick="setMode('streetLight1','FORCE_OFF')"><i class="fa-solid fa-circle-xmark"></i> OFF</button>
-          <button class="cbtn bauto" onclick="setMode('streetLight1','AUTO')"><i class="fa-solid fa-wand-magic-sparkles"></i> AUTO</button>
-        </div>
-      </div>
-      <div class="cfoot"><i class="fa-solid fa-map-pin"></i><span>13.3571° N, 80.1428° E</span></div>
+  <!-- ── CONTROL PANEL ─────────────────────── -->
+  <div class="section-header anim-fade-up" style="animation-delay:0.45s">
+    <div class="section-icon solar">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4" stroke="#ffc300" stroke-width="1.8"/>
+        <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="#ffc300" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
     </div>
+    <h2>CONTROL PANEL</h2>
+    <span>Firebase write</span>
+    <div class="section-line"></div>
+  </div>
 
-    <!-- CARD 2 -->
-    <div class="lcard" id="card2">
-      <div class="ch">
-        <div class="ctg">
-          <div class="lnum">02</div>
-          <div>
-            <h2>Street Light 2</h2>
-            <p class="cloc"><i class="fa-solid fa-location-dot"></i> Tiruvallur District</p>
-          </div>
-        </div>
-        <div class="spill" id="pill2"><span class="pdot" id="dot2"></span><span id="ptxt2">Loading…</span></div>
+  <div class="control-grid">
+    <!-- Light 1 Control -->
+    <div class="card control-card anim-fade-up" style="animation-delay:0.5s">
+      <div class="ctrl-title">
+        <div class="ctrl-number">L1</div>
+        <h3>STREET LIGHT 1</h3>
+        <div class="ctrl-badge oc-indicator auto" id="ctrl1-badge"><span class="dot"></span><span id="ctrl1-badge-text">AUTO</span></div>
       </div>
-      <div class="cb">
-        <div class="srow">
-          <div class="si"><span class="slb">Current Status</span><span class="svl" id="l2st">—</span></div>
-          <div class="si"><span class="slb">Control Mode</span><span class="svl" id="l2md">—</span></div>
+      <div class="ctrl-current">
+        <div>
+          <div class="cc-label">Current Mode</div>
+          <div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--cyan);margin-top:2px;" id="ctrl1-current-mode">—</div>
         </div>
-        <div class="bwrap">
-          <div class="bulb" id="b2"><div class="bglw"></div><i class="fa-solid fa-lightbulb"></i></div>
-          <span class="blbl" id="bl2">—</span>
-        </div>
-      </div>
-      <div class="cctrl">
-        <span class="ctitle">Manual Override</span>
-        <div class="bgrp">
-          <button class="cbtn bon"  onclick="setMode('streetLight2','FORCE_ON')"><i class="fa-solid fa-power-off"></i> ON</button>
-          <button class="cbtn boff" onclick="setMode('streetLight2','FORCE_OFF')"><i class="fa-solid fa-circle-xmark"></i> OFF</button>
-          <button class="cbtn bauto" onclick="setMode('streetLight2','AUTO')"><i class="fa-solid fa-wand-magic-sparkles"></i> AUTO</button>
+        <div>
+          <div class="cc-label">Status</div>
+          <div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--green);margin-top:2px;" id="ctrl1-current-status">—</div>
         </div>
       </div>
-      <div class="cfoot"><i class="fa-solid fa-map-pin"></i><span>13.3126° N, 79.8973° E</span></div>
-    </div>
-
-  </section>
-
-  <!-- BOTTOM -->
-  <section class="bot">
-
-    <!-- MAP -->
-    <div class="panel">
-      <div class="ph"><i class="fa-solid fa-map-location-dot"></i><h3>Live Location Map — Tamil Nadu</h3><span class="pbadge">Real-Time</span></div>
-      <div id="map"></div>
-      <div class="mleg">
-        <span class="li"><span class="ld ld-on"></span> Light ON</span>
-        <span class="li"><span class="ld ld-off"></span> Light OFF</span>
-        <span class="li"><span class="ld ld-auto"></span> AUTO Mode</span>
+      <div class="ctrl-buttons">
+        <button class="ctrl-btn on-btn" onclick="setMode('light1','FORCE_ON')">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          FORCE ON
+        </button>
+        <button class="ctrl-btn off-btn" onclick="setMode('light1','FORCE_OFF')">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.8"/><line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          FORCE OFF
+        </button>
+        <button class="ctrl-btn auto-btn" onclick="setMode('light1','AUTO')">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 1 0 9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 3h5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          AUTO
+        </button>
       </div>
     </div>
 
-    <!-- INFO -->
-    <div class="ipanel">
-      <div class="ph"><i class="fa-solid fa-circle-info"></i><h3>System Information</h3></div>
-
-      <!-- Day/Night -->
-      <div class="icard dncard" id="dnCard">
-        <div class="dnico" id="dnico"><i class="fa-solid fa-sun" id="dnicoEl"></i></div>
-        <div class="dntxt">
-          <span class="dnlbl">Environment State</span>
-          <span class="dnval" id="dnVal">Loading…</span>
+    <!-- Light 2 Control -->
+    <div class="card control-card anim-fade-up" style="animation-delay:0.55s">
+      <div class="ctrl-title">
+        <div class="ctrl-number" style="background:var(--solar-dim);border-color:rgba(255,195,0,0.25);color:var(--solar)">L2</div>
+        <h3>STREET LIGHT 2</h3>
+        <div class="ctrl-badge oc-indicator auto" id="ctrl2-badge"><span class="dot"></span><span id="ctrl2-badge-text">AUTO</span></div>
+      </div>
+      <div class="ctrl-current">
+        <div>
+          <div class="cc-label">Current Mode</div>
+          <div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--cyan);margin-top:2px;" id="ctrl2-current-mode">—</div>
+        </div>
+        <div>
+          <div class="cc-label">Status</div>
+          <div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--green);margin-top:2px;" id="ctrl2-current-status">—</div>
         </div>
       </div>
-
-      <!-- Timestamp -->
-      <div class="icard tscard">
-        <div class="tsico"><i class="fa-solid fa-satellite-dish"></i></div>
-        <div class="tstxt">
-          <span class="tslbl">Last Firebase Update</span>
-          <span class="tsval" id="tsVal">Loading…</span>
-        </div>
+      <div class="ctrl-buttons">
+        <button class="ctrl-btn on-btn" onclick="setMode('light2','FORCE_ON')">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          FORCE ON
+        </button>
+        <button class="ctrl-btn off-btn" onclick="setMode('light2','FORCE_OFF')">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.8"/><line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          FORCE OFF
+        </button>
+        <button class="ctrl-btn auto-btn" onclick="setMode('light2','AUTO')">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 1 0 9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 3h5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          AUTO
+        </button>
       </div>
-
-      <!-- Log -->
-      <div class="icard logcard">
-        <div class="lgh"><i class="fa-solid fa-terminal"></i><span>Activity Log</span></div>
-        <ul class="alog" id="alog">
-          <li class="le l-info"><span class="lt">--:--</span><span>Initialising system…</span></li>
-        </ul>
-      </div>
-
     </div>
-  </section>
+  </div>
 
-</main>
+  <!-- ── SMART MAP ──────────────────────────── -->
+  <div class="section-header anim-fade-up" style="animation-delay:0.6s">
+    <div class="section-icon green">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="#00e676" stroke-width="1.8" stroke-linejoin="round"/>
+        <circle cx="12" cy="9" r="2.5" stroke="#00e676" stroke-width="1.8"/>
+      </svg>
+    </div>
+    <h2>TAMIL NADU SMART MAP</h2>
+    <span>Leaflet · Live markers</span>
+    <div class="section-line"></div>
+  </div>
 
-<!-- FOOTER -->
-<footer>
-  <span><i class="fa-solid fa-solar-panel"></i>Smart Solar Street Light Monitoring System</span>
-  <span>Firebase Realtime DB · Leaflet.js · GitHub Pages</span>
-</footer>
+  <div id="map" class="anim-fade-up" style="animation-delay:0.65s"></div>
 
-<!-- TOAST -->
-<div class="toast" id="toast"><i class="fa-solid fa-check-circle"></i><span id="toastMsg">Done!</span></div>
+  <!-- ── LIVE CHARTS ────────────────────────── -->
+  <div class="section-header anim-fade-up" style="animation-delay:0.7s">
+    <div class="section-icon purple">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+        <polyline points="2,18 8,10 13,14 20,5" stroke="#7c4dff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="2" cy="18" r="1.5" fill="#7c4dff"/>
+        <circle cx="8" cy="10" r="1.5" fill="#7c4dff"/>
+        <circle cx="13" cy="14" r="1.5" fill="#7c4dff"/>
+        <circle cx="20" cy="5" r="1.5" fill="#7c4dff"/>
+      </svg>
+    </div>
+    <h2>LIVE ANALYTICS</h2>
+    <span>Real-time charts · 30-point history</span>
+    <div class="section-line"></div>
+  </div>
 
-<!-- ═══ SCRIPTS ═══ -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <div class="charts-grid">
+    <div class="card chart-card anim-fade-up" style="animation-delay:0.75s">
+      <div class="chart-title">Street Light Status History</div>
+      <div class="chart-subtitle">Light 1 &amp; Light 2 — binary ON/OFF over time</div>
+      <div class="chart-wrap"><canvas id="statusChart"></canvas></div>
+    </div>
+    <div class="card chart-card anim-fade-up" style="animation-delay:0.8s">
+      <div class="chart-title">Day / Night Trend</div>
+      <div class="chart-subtitle">Ambient condition changes over time</div>
+      <div class="chart-wrap"><canvas id="dayNightChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="anim-fade-up" style="animation-delay:0.85s">
+    <div class="footer-inner">
+      <div class="footer-badges">
+        <div class="footer-badge"><span class="fb-dot"></span>ESP32 DevKit V1</div>
+        <div class="footer-badge"><span class="fb-dot"></span>Firebase RTDB</div>
+        <div class="footer-badge"><span class="fb-dot"></span>GitHub Pages</div>
+      </div>
+      <div class="footer-copy">Smart Solar Street Light Monitoring System · Tamil Nadu, India</div>
+    </div>
+  </footer>
+
+</div><!-- /#app -->
+
+<!-- ═══════════════════ SCRIPTS ═══════════════════ -->
 <script>
-// ── FIREBASE INIT ────────────────────────────────────────────────
+/* ────────────────────────────────────────────────
+   FIREBASE CONFIG
+   ──────────────────────────────────────────────── */
 const firebaseConfig = {
   apiKey:            "AIzaSyA5IjgS-x7SzzKQ3bxRAm3Jruow8Q8Zg8c",
   authDomain:        "smart-solar-street-light-221a9.firebaseapp.com",
@@ -381,235 +1123,465 @@ const firebaseConfig = {
   messagingSenderId: "1008018383388",
   appId:             "1:1008018383388:web:dc266ead19ad13294c75d9"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ── STATE ────────────────────────────────────────────────────────
-const S = {
-  l1:{ status:null, mode:null },
-  l2:{ status:null, mode:null },
-  dayNight:null, ts:null
+/* ────────────────────────────────────────────────
+   STATE
+   ──────────────────────────────────────────────── */
+const state = {
+  light1: { status: '—', mode: '—' },
+  light2: { status: '—', mode: '—' },
+  dayNight: '—',
+  connected: false
 };
 
-// ── MAP ──────────────────────────────────────────────────────────
-// Light 1 → 13.3571151, 80.1427711  (Koovathur, Chennai)
-// Light 2 → 13.312592,  79.897254   (Tiruvallur District)
-let map, m1, m2;
+const MAX_HISTORY = 30;
+const statusHistory = { labels: [], sl1: [], sl2: [] };
+const dnHistory     = { labels: [], values: [] };
 
-function initMap(){
-  map = L.map("map",{ center:[13.335,80.020], zoom:10, zoomControl:true });
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{
-    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains:"abcd", maxZoom:19
-  }).addTo(map);
-
-  m1 = makeMarker(13.3571151, 80.1427711, "Street Light 1", "Koovathur, Chennai",   "auto").addTo(map);
-  m2 = makeMarker(13.312592,  79.897254,  "Street Light 2", "Tiruvallur District", "auto").addTo(map);
-
-  map.fitBounds(
-    L.latLngBounds([13.3571151,80.1427711],[13.312592,79.897254]),
-    {padding:[60,60]}
-  );
+/* ────────────────────────────────────────────────
+   TOAST
+   ──────────────────────────────────────────────── */
+function showToast(msg, type = 'info') {
+  const icons = {
+    success: '✓',
+    error:   '✗',
+    info:    'ℹ',
+    warning: '⚠'
+  };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span style="font-size:1rem">${icons[type]}</span><span>${msg}</span>`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => {
+    el.classList.add('out');
+    el.addEventListener('animationend', () => el.remove());
+  }, 3500);
 }
 
-function mkIcon(cls, label){
+/* ────────────────────────────────────────────────
+   LOADING
+   ──────────────────────────────────────────────── */
+function hideLoading() {
+  const ls = document.getElementById('loading-screen');
+  ls.classList.add('hidden');
+}
+
+const loadingMessages = [
+  'Connecting to Firebase…',
+  'Fetching sensor data…',
+  'Rendering smart city map…',
+  'System online.'
+];
+let lmIdx = 0;
+const lsText = document.getElementById('loading-status-text');
+const lmInterval = setInterval(() => {
+  lmIdx++;
+  if (lmIdx < loadingMessages.length) {
+    lsText.textContent = loadingMessages[lmIdx];
+  } else {
+    clearInterval(lmInterval);
+    setTimeout(hideLoading, 500);
+  }
+}, 600);
+
+/* ────────────────────────────────────────────────
+   DOM HELPERS
+   ──────────────────────────────────────────────── */
+function el(id) { return document.getElementById(id); }
+
+function setBadgeClass(badgeEl, cls) {
+  badgeEl.className = `oc-indicator ${cls}`;
+  if (!badgeEl.querySelector('.dot')) {
+    badgeEl.prepend(Object.assign(document.createElement('span'), { className: 'dot' }));
+  }
+}
+
+function normalizeStatus(raw) {
+  if (!raw) return '—';
+  const s = String(raw).trim().toUpperCase();
+  if (s === 'ON' || s === '1' || s === 'TRUE') return 'ON';
+  if (s === 'OFF' || s === '0' || s === 'FALSE') return 'OFF';
+  return raw;
+}
+
+function normalizeMode(raw) {
+  if (!raw) return '—';
+  const s = String(raw).trim().toUpperCase();
+  if (s === 'AUTO') return 'AUTO';
+  if (s === 'FORCE_ON' || s === 'ON') return 'FORCE_ON';
+  if (s === 'FORCE_OFF' || s === 'OFF') return 'FORCE_OFF';
+  return raw.toUpperCase();
+}
+
+function statusCls(s) {
+  if (s === 'ON')  return 'on';
+  if (s === 'OFF') return 'off';
+  return 'auto';
+}
+
+function modeCls(m) {
+  if (m === 'FORCE_ON')  return 'on';
+  if (m === 'FORCE_OFF') return 'off';
+  return 'auto';
+}
+
+/* ────────────────────────────────────────────────
+   UPDATE UI
+   ──────────────────────────────────────────────── */
+function updateDOMFromState() {
+  const { light1, light2, dayNight } = state;
+
+  // Light 1 Status
+  el('sl1-status-val').textContent = light1.status;
+  el('sl1-status-tag').textContent = light1.status;
+  setBadgeClass(el('sl1-status-badge'), statusCls(light1.status));
+  el('sl1-status-val').style.color = light1.status === 'ON' ? 'var(--green)' : 'var(--red)';
+
+  // Light 1 Mode
+  el('sl1-mode-val').textContent = light1.mode;
+  el('sl1-mode-tag').textContent = light1.mode;
+  setBadgeClass(el('sl1-mode-badge'), modeCls(light1.mode));
+
+  // Light 2 Status
+  el('sl2-status-val').textContent = light2.status;
+  el('sl2-status-tag').textContent = light2.status;
+  setBadgeClass(el('sl2-status-badge'), statusCls(light2.status));
+  el('sl2-status-val').style.color = light2.status === 'ON' ? 'var(--green)' : 'var(--red)';
+
+  // Light 2 Mode
+  el('sl2-mode-val').textContent = light2.mode;
+  el('sl2-mode-tag').textContent = light2.mode;
+  setBadgeClass(el('sl2-mode-badge'), modeCls(light2.mode));
+
+  // Day/Night
+  const isNight = dayNight === 'NIGHT';
+  el('daynight-val').textContent = dayNight;
+  el('daynight-tag').textContent = dayNight;
+  const dnBadge = el('daynight-badge');
+  setBadgeClass(dnBadge, isNight ? 'night' : 'day');
+  el('daynight-val').style.color = isNight ? '#b48eff' : 'var(--solar)';
+
+  // Header pill
+  const pill = el('daynight-pill');
+  pill.style.cssText = isNight
+    ? 'background:var(--purple-dim);border-color:rgba(124,77,255,0.3);color:#b48eff'
+    : 'background:var(--solar-dim);border-color:rgba(255,195,0,0.3);color:var(--solar)';
+  el('daynight-pill-text').textContent = dayNight;
+
+  // Control panel current
+  el('ctrl1-current-mode').textContent   = light1.mode;
+  el('ctrl1-current-status').textContent = light1.status;
+  el('ctrl2-current-mode').textContent   = light2.mode;
+  el('ctrl2-current-status').textContent = light2.status;
+
+  // Control badges
+  el('ctrl1-badge-text').textContent = light1.mode;
+  setBadgeClass(el('ctrl1-badge'), modeCls(light1.mode));
+  el('ctrl2-badge-text').textContent = light2.mode;
+  setBadgeClass(el('ctrl2-badge'), modeCls(light2.mode));
+
+  // Timestamp
+  el('last-update').textContent = new Date().toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+
+  // Map markers
+  updateMapMarkers();
+
+  // Charts
+  pushChartHistory();
+}
+
+/* ────────────────────────────────────────────────
+   FIREBASE LISTENERS
+   ──────────────────────────────────────────────── */
+// Connection state
+db.ref('.info/connected').on('value', snap => {
+  const connected = snap.val() === true;
+  state.connected = connected;
+  const pill = el('firebase-status-pill');
+  const txt  = el('firebase-status-text');
+  if (connected) {
+    pill.className = 'status-pill connected';
+    txt.textContent = 'Firebase Live';
+    showToast('Firebase connection established', 'success');
+  } else {
+    pill.className = 'status-pill disconnected';
+    txt.textContent = 'Disconnected';
+    showToast('Firebase disconnected — retrying', 'warning');
+  }
+});
+
+// Listen to the whole data tree
+db.ref('/').on('value', snap => {
+  const data = snap.val();
+  if (!data) {
+    showToast('No data found in Firebase. Waiting for ESP32…', 'warning');
+    return;
+  }
+
+  // Flexible path resolution — try common structures
+  const l1 = data.light1 || data.Light1 || data.streetlight1 || data.StreetLight1 || {};
+  const l2 = data.light2 || data.Light2 || data.streetlight2 || data.StreetLight2 || {};
+  const dn = data.daynight || data.DayNight || data.day_night || data.ambient || '';
+
+  state.light1.status = normalizeStatus(l1.status || l1.Status || l1.state || l1.power);
+  state.light1.mode   = normalizeMode(l1.mode   || l1.Mode   || l1.control);
+
+  state.light2.status = normalizeStatus(l2.status || l2.Status || l2.state || l2.power);
+  state.light2.mode   = normalizeMode(l2.mode   || l2.Mode   || l2.control);
+
+  const dnRaw = String(dn || data.dayNight || data.day_night || '').toUpperCase();
+  state.dayNight = dnRaw.includes('NIGHT') ? 'NIGHT' : dnRaw.includes('DAY') ? 'DAY' : dnRaw || '—';
+
+  updateDOMFromState();
+}, err => {
+  console.error('Firebase read error:', err);
+  showToast('Firebase read error: ' + err.message, 'error');
+});
+
+/* ────────────────────────────────────────────────
+   FIREBASE WRITE (CONTROL)
+   ──────────────────────────────────────────────── */
+function setMode(light, mode) {
+  const ref = db.ref(`/${light}/mode`);
+  ref.set(mode)
+    .then(() => showToast(`${light.toUpperCase()} → ${mode}`, 'success'))
+    .catch(e => showToast(`Write failed: ${e.message}`, 'error'));
+}
+
+/* ────────────────────────────────────────────────
+   LEAFLET MAP
+   ──────────────────────────────────────────────── */
+const LOCATIONS = [
+  { id: 'light1', name: 'Street Light 1 — Chennai', lat: 13.0827, lng: 80.2707 },
+  { id: 'light2', name: 'Street Light 2 — Tiruvallur', lat: 13.1439, lng: 79.9089 }
+];
+
+// Custom SVG marker factory
+function makeIcon(color) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
+    <path d="M18 2 C10.27 2 4 8.27 4 16 C4 26 18 42 18 42 S32 26 32 16 C32 8.27 25.73 2 18 2Z"
+      fill="${color}" stroke="rgba(0,0,0,0.4)" stroke-width="1.5"/>
+    <circle cx="18" cy="16" r="6" fill="rgba(255,255,255,0.9)"/>
+    <circle cx="18" cy="16" r="3" fill="${color}"/>
+  </svg>`;
   return L.divIcon({
-    className:"",
-    html:`<div class="cmark mk-${cls}"><div class="mpin"><i class="fa-solid fa-street-view"></i></div><div class="mlbl">${label}</div></div>`,
-    iconSize:[80,52], iconAnchor:[40,52], popupAnchor:[0,-52]
+    html: svg,
+    className: '',
+    iconSize: [36, 44],
+    iconAnchor: [18, 44],
+    popupAnchor: [0, -44]
   });
 }
 
-function makeMarker(lat,lng,title,loc,cls){
-  const mk = L.marker([lat,lng],{ icon: mkIcon(cls,title) });
-  mk.bindPopup(popupHTML(title,loc,lat,lng,"—","—"));
-  return mk;
-}
+const mapInstance = L.map('map', { zoomControl: true }).setView([13.11, 80.09], 9);
 
-function popupHTML(title,loc,lat,lng,st,md){
-  return `<div class="ptitle"><i class="fa-solid fa-lightbulb"></i> ${title}</div>
-  <div class="prow"><span>Location</span><strong>${loc}</strong></div>
-  <div class="prow"><span>Coords</span><strong>${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E</strong></div>
-  <div class="prow"><span>Status</span><strong>${st}</strong></div>
-  <div class="prow"><span>Mode</span><strong>${md}</strong></div>`;
-}
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap © CARTO',
+  subdomains: 'abcd',
+  maxZoom: 20
+}).addTo(mapInstance);
 
-function refreshMarker(num){
-  const isL1 = num===1;
-  const mk   = isL1 ? m1 : m2;
-  const lat  = isL1 ? 13.3571151 : 13.312592;
-  const lng  = isL1 ? 80.1427711 : 79.897254;
-  const title= isL1 ? "Street Light 1" : "Street Light 2";
-  const loc  = isL1 ? "Koovathur, Chennai" : "Tiruvallur District";
-  const d    = isL1 ? S.l1 : S.l2;
-  const cls  = resolveClass(d.status, d.mode);
-  if(!mk) return;
-  mk.setIcon(mkIcon(cls, title));
-  mk.setPopupContent(popupHTML(title,loc,lat,lng, d.status||"—", d.mode||"—"));
-}
+const mapMarkers = {};
 
-// ── HELPERS ──────────────────────────────────────────────────────
-function resolveClass(status, mode){
-  if(mode==="FORCE_ON")  return "on";
-  if(mode==="FORCE_OFF") return "off";
-  if(status==="ON")      return "on";
-  if(status==="OFF")     return "off";
-  return "auto";
-}
-
-function updateCard(num, status, mode){
-  const cls = resolveClass(status, mode);
-  // pill
-  const pill = document.getElementById("pill"+num);
-  const txt  = document.getElementById("ptxt"+num);
-  pill.className = "spill p-"+cls;
-  txt.textContent = cls==="on"?"ON": cls==="off"?"OFF":"AUTO";
-  // stats
-  document.getElementById("l"+num+"st").textContent = status||"—";
-  document.getElementById("l"+num+"md").textContent = mode||"—";
-  // bulb
-  const bulb = document.getElementById("b"+num);
-  bulb.className = "bulb "+cls;
-  document.getElementById("bl"+num).textContent = cls.toUpperCase();
-  // card border
-  document.getElementById("card"+num).className = "lcard c-"+cls;
-  // summary
-  updateStrip();
-  // marker
-  refreshMarker(num);
-}
-
-function updateStrip(){
-  const c1 = resolveClass(S.l1.status, S.l1.mode);
-  const c2 = resolveClass(S.l2.status, S.l2.mode);
-  const act = [c1,c2].filter(c=>c==="on").length;
-  document.getElementById("sumAL").textContent = act+" / 2";
-  document.getElementById("sumSS").textContent = "Online";
-}
-
-function updateDN(val){
-  const night = (val||"").toString().toUpperCase()==="NIGHT";
-  document.getElementById("dnVal").textContent = night ? "🌙 Night" : "☀️ Day";
-  document.getElementById("sumDN").textContent = night ? "Night" : "Day";
-  document.getElementById("dnico").className   = "dnico"+(night?" night":"");
-  document.getElementById("dnicoEl").className = "fa-solid fa-"+(night?"moon":"sun");
-  document.getElementById("sc0").querySelector("i").className = "fa-solid fa-"+(night?"moon":"sun");
-}
-
-function updateTS(raw){
-  let d="—";
-  if(raw){
-    const dt = isNaN(raw) ? new Date(raw) : new Date(Number(raw));
-    d = isNaN(dt.getTime()) ? String(raw) :
-      dt.toLocaleString("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"});
-  }
-  document.getElementById("tsVal").textContent = d;
-  document.getElementById("sumLU").textContent = d==="—"?"—":d.slice(0,16)+"…";
-}
-
-// ── LOG ───────────────────────────────────────────────────────────
-function log(msg, type="info"){
-  const ul  = document.getElementById("alog");
-  const now = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
-  const li  = document.createElement("li");
-  li.className = "le l-"+type;
-  li.innerHTML = `<span class="lt">${now}</span><span>${msg}</span>`;
-  ul.insertBefore(li, ul.firstChild);
-  while(ul.children.length > 30) ul.removeChild(ul.lastChild);
-}
-
-// ── CLOCK ─────────────────────────────────────────────────────────
-function startClock(){
-  const tick=()=>{
-    document.getElementById("hdrTime").textContent =
-      new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit",timeZone:"Asia/Kolkata"});
-  };
-  tick(); setInterval(tick,1000);
-}
-
-// ── CONNECTION BADGE ──────────────────────────────────────────────
-function setConn(s){
-  const b = document.getElementById("connBadge");
-  const l = document.getElementById("connLbl");
-  if(s==="ok"){  b.className="conn-badge ok";  l.textContent="Live"; }
-  else if(s==="err"){ b.className="conn-badge err"; l.textContent="Error"; }
-  else{ b.className="conn-badge"; l.textContent="Connecting…"; }
-}
-
-// ── TOAST ─────────────────────────────────────────────────────────
-let tTimer=null;
-function toast(msg, type="ok"){
-  const t  = document.getElementById("toast");
-  const m  = document.getElementById("toastMsg");
-  const ic = t.querySelector("i");
-  m.textContent  = msg;
-  ic.className   = type==="err" ? "fa-solid fa-circle-exclamation" : "fa-solid fa-check-circle";
-  t.style.borderColor = type==="err" ? "rgba(239,68,68,0.5)" : "rgba(34,197,94,0.4)";
-  t.style.color       = type==="err" ? "#ef4444" : "#22c55e";
-  t.classList.add("show");
-  clearTimeout(tTimer);
-  tTimer = setTimeout(()=>t.classList.remove("show"), 3000);
-}
-
-// ── FIREBASE LISTENERS ────────────────────────────────────────────
-// Listen to streetLight1 — fires immediately + on every change
-db.ref("streetLight1").on("value", snap=>{
-  const d = snap.val()||{};
-  S.l1.status = d.status||"—";
-  S.l1.mode   = d.mode  ||"—";
-  updateCard(1, S.l1.status, S.l1.mode);
-  log("Light 1 → status:"+S.l1.status+" mode:"+S.l1.mode, resolveClass(S.l1.status,S.l1.mode));
-  setConn("ok");
-}, err=>{ log("L1 error: "+err.message,"off"); setConn("err"); });
-
-// Listen to streetLight2
-db.ref("streetLight2").on("value", snap=>{
-  const d = snap.val()||{};
-  S.l2.status = d.status||"—";
-  S.l2.mode   = d.mode  ||"—";
-  updateCard(2, S.l2.status, S.l2.mode);
-  log("Light 2 → status:"+S.l2.status+" mode:"+S.l2.mode, resolveClass(S.l2.status,S.l2.mode));
-  setConn("ok");
-}, err=>{ log("L2 error: "+err.message,"off"); setConn("err"); });
-
-// Listen to system/dayNight
-db.ref("system/dayNight").on("value", snap=>{
-  S.dayNight = snap.val();
-  updateDN(S.dayNight);
-  log("Day/Night → "+(S.dayNight||"unknown"),"info");
-}, err=>log("dayNight error: "+err.message,"off"));
-
-// Listen to system/timestamp
-db.ref("system/timestamp").on("value", snap=>{
-  S.ts = snap.val();
-  updateTS(S.ts);
-}, err=>log("timestamp error: "+err.message,"off"));
-
-// Firebase connection state
-db.ref(".info/connected").on("value", snap=>{
-  if(snap.val()===true){ setConn("ok"); log("Connected to Firebase","info"); }
-  else{ setConn("err"); log("Disconnected — retrying…","off"); }
+LOCATIONS.forEach(loc => {
+  const marker = L.marker([loc.lat, loc.lng], { icon: makeIcon('#00d4ff') })
+    .addTo(mapInstance)
+    .bindPopup(buildPopup(loc));
+  mapMarkers[loc.id] = marker;
 });
 
-// ── WRITE COMMAND ─────────────────────────────────────────────────
-// Called by ON / OFF / AUTO buttons
-// Writes mode value to Firebase: FORCE_ON | FORCE_OFF | AUTO
-function setMode(path, val){
-  db.ref(path+"/mode").set(val)
-    .then(()=>{
-      const lbl = path==="streetLight1"?"Light 1":"Light 2";
-      const pr  = val==="FORCE_ON"?"Forced ON": val==="FORCE_OFF"?"Forced OFF":"Set AUTO";
-      toast(lbl+": "+pr,"ok");
-      log("CMD → "+lbl+" = "+val,"cmd");
-    })
-    .catch(err=>{ toast("Failed: "+err.message,"err"); log("Write error: "+err.message,"off"); });
+function buildPopup(loc) {
+  const s = state[loc.id];
+  const status = s ? s.status : '—';
+  const mode   = s ? s.mode   : '—';
+  const sColor = status === 'ON' ? '#00e676' : status === 'OFF' ? '#ff3d5a' : '#7ea8c9';
+  return `<div class="popup-inner">
+    <h4>${loc.name}</h4>
+    <p><span>Status</span><strong style="color:${sColor}">${status}</strong></p>
+    <p><span>Mode</span><strong style="color:#00d4ff">${mode}</strong></p>
+    <p><span>Coordinates</span><strong style="font-size:0.7rem">${loc.lat}, ${loc.lng}</strong></p>
+  </div>`;
 }
 
-// ── BOOT ──────────────────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded",()=>{
-  startClock();
-  initMap();
-  log("System initialised — listening to Firebase…","info");
+function updateMapMarkers() {
+  LOCATIONS.forEach(loc => {
+    const s = state[loc.id];
+    const isOn = s && s.status === 'ON';
+    const color = isOn ? '#00e676' : '#ff3d5a';
+    const marker = mapMarkers[loc.id];
+    if (marker) {
+      marker.setIcon(makeIcon(color));
+      marker.setPopupContent(buildPopup(loc));
+    }
+  });
+}
+
+/* ────────────────────────────────────────────────
+   CHART.JS
+   ──────────────────────────────────────────────── */
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: { duration: 400 },
+  plugins: {
+    legend: {
+      labels: {
+        color: '#7ea8c9',
+        font: { family: 'JetBrains Mono', size: 11 },
+        boxWidth: 14,
+        padding: 16
+      }
+    },
+    tooltip: {
+      backgroundColor: 'rgba(7,20,40,0.95)',
+      borderColor: 'rgba(0,212,255,0.3)',
+      borderWidth: 1,
+      titleColor: '#00d4ff',
+      bodyColor: '#e8f4ff',
+      titleFont: { family: 'JetBrains Mono', size: 11 },
+      bodyFont:  { family: 'JetBrains Mono', size: 11 },
+      padding: 10
+    }
+  },
+  scales: {
+    x: {
+      ticks: { color: '#3a5872', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 8, maxRotation: 0 },
+      grid:  { color: 'rgba(0,212,255,0.05)' }
+    },
+    y: {
+      ticks: { color: '#3a5872', font: { family: 'JetBrains Mono', size: 9 }, stepSize: 1 },
+      grid:  { color: 'rgba(0,212,255,0.05)' },
+      min: 0, max: 1
+    }
+  }
+};
+
+// Status Chart
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+const statusChart = new Chart(statusCtx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [
+      {
+        label: 'Light 1',
+        data: [],
+        borderColor: '#00e676',
+        backgroundColor: 'rgba(0,230,118,0.08)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#00e676',
+        tension: 0.4,
+        fill: true
+      },
+      {
+        label: 'Light 2',
+        data: [],
+        borderColor: '#00d4ff',
+        backgroundColor: 'rgba(0,212,255,0.08)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#00d4ff',
+        tension: 0.4,
+        fill: true
+      }
+    ]
+  },
+  options: {
+    ...chartDefaults,
+    scales: {
+      ...chartDefaults.scales,
+      y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks, callback: v => v === 1 ? 'ON' : 'OFF' } }
+    }
+  }
+});
+
+// Day/Night Chart
+const dnCtx = document.getElementById('dayNightChart').getContext('2d');
+const dnChart = new Chart(dnCtx, {
+  type: 'bar',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Day/Night',
+      data: [],
+      backgroundColor: ctx => {
+        const v = ctx.dataset.data[ctx.dataIndex];
+        return v === 1 ? 'rgba(124,77,255,0.5)' : 'rgba(255,195,0,0.5)';
+      },
+      borderColor: ctx => {
+        const v = ctx.dataset.data[ctx.dataIndex];
+        return v === 1 ? '#7c4dff' : '#ffc300';
+      },
+      borderWidth: 1.5,
+      borderRadius: 4
+    }]
+  },
+  options: {
+    ...chartDefaults,
+    scales: {
+      ...chartDefaults.scales,
+      y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks, callback: v => v === 1 ? 'NIGHT' : 'DAY' } }
+    }
+  }
+});
+
+function pushChartHistory() {
+  const now = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const sl1 = state.light1.status === 'ON' ? 1 : 0;
+  const sl2 = state.light2.status === 'ON' ? 1 : 0;
+  const dn  = state.dayNight === 'NIGHT' ? 1 : 0;
+
+  // Status chart
+  statusHistory.labels.push(now);
+  statusHistory.sl1.push(sl1);
+  statusHistory.sl2.push(sl2);
+  if (statusHistory.labels.length > MAX_HISTORY) {
+    statusHistory.labels.shift();
+    statusHistory.sl1.shift();
+    statusHistory.sl2.shift();
+  }
+  statusChart.data.labels = statusHistory.labels;
+  statusChart.data.datasets[0].data = statusHistory.sl1;
+  statusChart.data.datasets[1].data = statusHistory.sl2;
+  statusChart.update('none');
+
+  // Day/Night chart
+  dnHistory.labels.push(now);
+  dnHistory.values.push(dn);
+  if (dnHistory.labels.length > MAX_HISTORY) {
+    dnHistory.labels.shift();
+    dnHistory.values.shift();
+  }
+  dnChart.data.labels = dnHistory.labels;
+  dnChart.data.datasets[0].data = dnHistory.values;
+  dnChart.update('none');
+}
+
+/* ────────────────────────────────────────────────
+   DEMO SEED (runs only if Firebase sends no data
+   within 4 s — lets the UI look useful without ESP32)
+   ──────────────────────────────────────────────── */
+let demoSeeded = false;
+setTimeout(() => {
+  if (!demoSeeded) {
+    state.light1 = { status: 'ON',  mode: 'AUTO' };
+    state.light2 = { status: 'OFF', mode: 'AUTO' };
+    state.dayNight = 'NIGHT';
+    updateDOMFromState();
+    showToast('Demo mode — awaiting live ESP32 data', 'info');
+  }
+}, 4000);
+
+// Mark demo as not needed once real data arrives
+db.ref('/').once('value', snap => {
+  if (snap.val()) demoSeeded = true;
 });
 </script>
 </body>
