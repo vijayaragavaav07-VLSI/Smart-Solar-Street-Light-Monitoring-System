@@ -2,1217 +2,841 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Smart Solar Street Light — Control Form</title>
-
-<!-- Firebase CDN -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Solar Street Lights · Control</title>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
-<!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
-/* ══════════════════════════════════════════════
-   TOKENS
-══════════════════════════════════════════════ */
-:root {
-  --void:       #020d1f;
-  --deep:       #050f24;
-  --panel:      #071428;
-  --cyan:       #00d4ff;
-  --cyan-d:     rgba(0,212,255,0.12);
-  --cyan-b:     rgba(0,212,255,0.22);
-  --solar:      #ffc300;
-  --solar-d:    rgba(255,195,0,0.12);
-  --green:      #00e676;
-  --green-d:    rgba(0,230,118,0.12);
-  --red:        #ff3d5a;
-  --red-d:      rgba(255,61,90,0.12);
-  --purple:     #7c4dff;
-  --purple-d:   rgba(124,77,255,0.12);
-  --orange:     #ff7043;
-  --orange-d:   rgba(255,112,67,0.12);
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+:root{
+  --bg:#0f0f13;
+  --surface:#18181f;
+  --surface2:#1f1f28;
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.12);
 
-  --glass:      rgba(7,20,40,0.8);
-  --border:     rgba(0,212,255,0.18);
-  --text:       #e8f4ff;
-  --sub:        #7ea8c9;
-  --dim:        #2a4560;
+  --amber:#ffb830;
+  --amber-soft:rgba(255,184,48,0.15);
+  --amber-glow:rgba(255,184,48,0.35);
 
-  --r-card:     18px;
-  --r-inp:      11px;
-  --r-btn:      10px;
-  --tr:         0.22s cubic-bezier(.4,0,.2,1);
+  --sky:#38bdf8;
+  --sky-soft:rgba(56,189,248,0.12);
 
-  --font-d: 'Orbitron', monospace;
-  --font-b: 'Inter', sans-serif;
-  --font-m: 'JetBrains Mono', monospace;
+  --lime:#a3e635;
+  --lime-soft:rgba(163,230,53,0.12);
+  --lime-glow:rgba(163,230,53,0.3);
+
+  --rose:#fb7185;
+  --rose-soft:rgba(251,113,133,0.12);
+
+  --muted:#6b7280;
+  --text2:#9ca3af;
+  --text1:#e5e7eb;
+  --white:#ffffff;
+
+  --r:20px;
+  --r-sm:14px;
+  --r-xs:10px;
+  --ease:cubic-bezier(.4,0,.2,1);
 }
 
-/* ══════════════════════════════════════════════
-   RESET
-══════════════════════════════════════════════ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: var(--font-b);
-  background: var(--void);
-  color: var(--text);
-  min-height: 100vh;
-  overflow-x: hidden;
-  font-size: 15px;
-  line-height: 1.6;
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text1);
+  min-height:100vh;
+  overflow-x:hidden;
 }
 
-/* ── GRID BG ── */
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background-image:
-    linear-gradient(rgba(0,180,255,0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,180,255,0.055) 1px, transparent 1px);
-  background-size: 44px 44px;
-  pointer-events: none; z-index: 0;
+/* ── splash ── */
+#splash{
+  position:fixed;inset:0;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  z-index:999;
+  transition:opacity .5s var(--ease),visibility .5s;
 }
-body::after {
-  content: '';
-  position: fixed;
-  top: -30%; left: -10%; width: 70%; height: 70%;
-  background: radial-gradient(ellipse, rgba(0,80,180,0.10) 0%, transparent 70%);
-  pointer-events: none; z-index: 0;
-  animation: bgPulse 9s ease-in-out infinite alternate;
+#splash.gone{opacity:0;visibility:hidden}
+.splash-sun{
+  width:72px;height:72px;
+  background:conic-gradient(from 0deg, var(--amber), #ff6b2b, var(--amber));
+  border-radius:50%;
+  animation:sunSpin 3s linear infinite;
+  box-shadow:0 0 40px var(--amber-glow), 0 0 80px rgba(255,184,48,0.15);
 }
-@keyframes bgPulse { from{opacity:.5} to{opacity:1} }
+@keyframes sunSpin{to{transform:rotate(360deg)}}
+.splash-label{font-size:1.1rem;font-weight:700;color:var(--text1);letter-spacing:-.01em}
+.splash-sub{font-size:.8rem;color:var(--muted);font-weight:500}
+.splash-bar{width:200px;height:3px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.splash-prog{height:100%;background:linear-gradient(90deg,var(--amber),#ff6b2b);border-radius:99px;animation:prog 2s ease forwards}
+@keyframes prog{from{width:0}to{width:100%}}
 
-/* ══════════════════════════════════════════════
-   LOADING
-══════════════════════════════════════════════ */
-#ls {
-  position: fixed; inset: 0;
-  background: var(--void);
-  z-index: 9999;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 24px;
-  transition: opacity .5s, visibility .5s;
-}
-#ls.hide { opacity: 0; visibility: hidden; }
+/* ── page shell ── */
+.page{max-width:480px;margin:0 auto;padding:0 16px env(safe-area-inset-bottom,16px)}
 
-.ls-icon {
-  width: 64px; height: 64px;
-  animation: spin 2.5s linear infinite;
+/* ── top bar ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 0 8px;
+  position:sticky;top:0;z-index:50;
+  background:linear-gradient(180deg,var(--bg) 80%,transparent);
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+.topbar-left{display:flex;align-items:center;gap:10px}
+.sun-orb{
+  width:40px;height:40px;border-radius:12px;
+  background:linear-gradient(135deg,#ff6b2b,var(--amber));
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  box-shadow:0 4px 16px var(--amber-glow);
+}
+.sun-orb svg{width:20px;height:20px}
+.topbar-title{font-size:1rem;font-weight:700;letter-spacing:-.01em;line-height:1.2}
+.topbar-sub{font-size:.72rem;color:var(--muted);font-weight:500;margin-top:1px}
+.conn-badge{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:99px;
+  font-size:.7rem;font-weight:600;
+  border:1px solid transparent;
+  transition:.2s var(--ease);
+}
+.conn-badge.live{background:rgba(163,230,53,.1);border-color:rgba(163,230,53,.25);color:var(--lime)}
+.conn-badge.off {background:rgba(251,113,133,.1);border-color:rgba(251,113,133,.25);color:var(--rose)}
+.conn-badge.wait{background:rgba(255,184,48,.1); border-color:rgba(255,184,48,.25); color:var(--amber)}
+.conn-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.conn-badge.live .conn-dot{animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 0 0 currentColor}50%{opacity:.6;box-shadow:0 0 0 4px transparent}}
 
-.ls-title {
-  font-family: var(--font-d);
-  font-size: clamp(1rem,3vw,1.4rem);
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--cyan), var(--solar));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text; text-align: center; letter-spacing: .05em;
+/* ── hero ambient banner ── */
+.hero-banner{
+  margin:12px 0 20px;
+  border-radius:var(--r);
+  padding:24px 22px;
+  background:linear-gradient(135deg,#1a1a24 0%,#1c1a28 100%);
+  border:1px solid var(--border);
+  position:relative;overflow:hidden;
+}
+.hero-banner::before{
+  content:'';position:absolute;
+  top:-60px;right:-60px;
+  width:200px;height:200px;
+  background:radial-gradient(circle,rgba(255,184,48,.18) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-banner::after{
+  content:'';position:absolute;
+  bottom:-40px;left:-40px;
+  width:160px;height:160px;
+  background:radial-gradient(circle,rgba(56,189,248,.10) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.hero-greeting{font-size:.72rem;font-weight:600;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.hero-title{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:var(--white)}
+.hero-sub{font-size:.78rem;color:var(--text2);margin-top:6px;font-weight:500}
+.hero-stats{display:flex;gap:20px;margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
+.hstat{display:flex;flex-direction:column;gap:3px}
+.hstat-val{font-size:1.1rem;font-weight:800;letter-spacing:-.02em}
+.hstat-lbl{font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.hstat.on  .hstat-val{color:var(--lime)}
+.hstat.off .hstat-val{color:var(--rose)}
+.hstat.auto .hstat-val{color:var(--sky)}
+.hstat.day  .hstat-val{color:var(--amber)}
+.hero-time{font-size:.68rem;font-weight:600;color:var(--muted);white-space:nowrap;padding-top:2px}
+
+/* ── section label ── */
+.sec-lbl{
+  font-size:.68rem;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.1em;
+  margin:24px 0 10px;
 }
 
-.ls-bar { width: 220px; height: 3px; background: rgba(0,212,255,.1); border-radius: 99px; overflow: hidden; }
-.ls-fill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--solar)); animation: lsFill 2s ease forwards; }
-@keyframes lsFill { from{width:0} to{width:100%} }
-
-.ls-msg { font-family: var(--font-m); font-size: .72rem; color: var(--sub); animation: blink 1s step-end infinite; }
-@keyframes blink { 50%{opacity:0} }
-
-/* ══════════════════════════════════════════════
-   TOAST
-══════════════════════════════════════════════ */
-#toast-wrap {
-  position: fixed; top: 76px; right: 18px;
-  z-index: 8000;
-  display: flex; flex-direction: column; gap: 8px;
-  pointer-events: none;
+/* ── light card ── */
+.light-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  overflow:hidden;
+  margin-bottom:12px;
+  transition:border-color .2s var(--ease);
 }
-.toast {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 16px;
-  border-radius: 12px; border: 1px solid transparent;
-  background: var(--glass);
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  font-size: .8rem; max-width: 300px;
-  pointer-events: all;
-  animation: tIn .3s ease both;
-  box-shadow: 0 6px 28px rgba(0,0,0,.45);
-}
-.toast.success { border-color: rgba(0,230,118,.3); color: var(--green); }
-.toast.error   { border-color: rgba(255,61,90,.3);  color: var(--red); }
-.toast.info    { border-color: rgba(0,212,255,.3);  color: var(--cyan); }
-.toast.warning { border-color: rgba(255,195,0,.3);  color: var(--solar); }
-.toast.out { animation: tOut .3s ease forwards; }
-@keyframes tIn  { from{opacity:0;transform:translateX(24px)} to{opacity:1;transform:none} }
-@keyframes tOut { from{opacity:1;transform:none} to{opacity:0;transform:translateX(24px)} }
+.light-card.is-on{border-color:rgba(163,230,53,.25)}
+.light-card.is-off{border-color:rgba(251,113,133,.18)}
 
-/* ══════════════════════════════════════════════
-   LAYOUT
-══════════════════════════════════════════════ */
-#app { position: relative; z-index: 1; max-width: 980px; margin: 0 auto; padding: 0 18px 60px; }
+.lc-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 18px 14px;
+  gap:12px;
+}
+.lc-icon{
+  width:48px;height:48px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  position:relative;
+  transition:.3s var(--ease);
+}
+.lc-icon.on {background:rgba(163,230,53,.15);box-shadow:0 0 20px rgba(163,230,53,.2)}
+.lc-icon.off{background:rgba(255,255,255,.05)}
+.lc-icon svg{width:24px;height:24px;transition:.3s}
+.lc-icon.on svg path,.lc-icon.on svg circle{stroke:var(--lime)!important}
+.lc-icon.on svg .bulb-fill{fill:rgba(163,230,53,.3)}
+.lc-meta{flex:1}
+.lc-name{font-size:.95rem;font-weight:700;letter-spacing:-.01em;color:var(--white)}
+.lc-loc{font-size:.7rem;color:var(--muted);font-weight:500;margin-top:2px}
+.lc-status-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:99px;
+  font-size:.65rem;font-weight:700;letter-spacing:.04em;
+  transition:.25s var(--ease);
+}
+.sp-on {background:var(--lime-soft); color:var(--lime); border:1px solid rgba(163,230,53,.25)}
+.sp-off{background:var(--rose-soft); color:var(--rose); border:1px solid rgba(251,113,133,.2)}
+.sp-unk{background:rgba(255,255,255,.05); color:var(--muted); border:1px solid var(--border)}
+.sp-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.sp-on .sp-dot{animation:blink 2s infinite}
 
-/* ══════════════════════════════════════════════
-   HEADER
-══════════════════════════════════════════════ */
-header {
-  position: sticky; top: 0; z-index: 100;
-  padding: 0 18px; margin: 0 -18px;
-  background: linear-gradient(180deg, rgba(2,13,31,.98) 80%, transparent);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-}
-.hdr {
-  display: flex; align-items: center; gap: 16px;
-  padding: 16px 0 14px;
-  border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
-}
-.logo {
-  width: 44px; height: 44px;
-  background: linear-gradient(135deg,#1a3a6e,#0a1f44);
-  border: 1.5px solid var(--cyan); border-radius: 11px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 0 18px rgba(0,212,255,.22), inset 0 1px 0 rgba(255,255,255,.05);
-}
-.logo svg { width: 24px; height: 24px; }
+.lc-divider{height:1px;background:var(--border);margin:0 18px}
 
-.hdr-text { flex: 1; min-width: 180px; }
-.hdr-text h1 {
-  font-family: var(--font-d);
-  font-size: clamp(.78rem,1.8vw,1rem);
-  font-weight: 700; letter-spacing: .06em;
-  background: linear-gradient(135deg, var(--cyan) 20%, #fff 60%, var(--solar));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+/* ── big toggle switch ── */
+.big-toggle-wrap{padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.bt-label{display:flex;flex-direction:column;gap:2px}
+.bt-label span:first-child{font-size:.82rem;font-weight:600;color:var(--text1)}
+.bt-label span:last-child{font-size:.68rem;color:var(--muted);font-weight:500}
+.big-toggle{
+  position:relative;width:60px;height:32px;flex-shrink:0;
+  cursor:pointer;
 }
-.hdr-text p { font-size: .7rem; color: var(--sub); font-family: var(--font-m); margin-top: 2px; }
-
-.hdr-pills { display: flex; gap: 10px; flex-wrap: wrap; }
-.pill {
-  display: flex; align-items: center; gap: 7px;
-  padding: 6px 13px; border-radius: 99px;
-  font-size: .68rem; font-family: var(--font-m);
-  font-weight: 600; letter-spacing: .04em;
-  border: 1px solid transparent;
-  transition: var(--tr);
+.big-toggle input{position:absolute;opacity:0;width:0;height:0}
+.bt-track{
+  position:absolute;inset:0;
+  background:rgba(255,255,255,.08);
+  border:1.5px solid var(--border2);
+  border-radius:99px;
+  transition:.25s var(--ease);
 }
-.pill.conn   { background: var(--green-d); border-color: rgba(0,230,118,.3); color: var(--green); }
-.pill.disc   { background: var(--red-d);   border-color: rgba(255,61,90,.3);  color: var(--red); }
-.pill.wait   { background: var(--solar-d); border-color: rgba(255,195,0,.3);  color: var(--solar); }
-.pdot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-.pill.conn .pdot { animation: pdot 2s ease-in-out infinite; }
-@keyframes pdot { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,230,118,.5)} 50%{opacity:.7;box-shadow:0 0 0 5px rgba(0,230,118,0)} }
-
-/* ══════════════════════════════════════════════
-   NAV TABS
-══════════════════════════════════════════════ */
-.tab-nav {
-  display: flex; gap: 6px; flex-wrap: wrap;
-  margin: 28px 0 22px;
-  background: rgba(7,20,40,.6);
-  border: 1px solid var(--border);
-  border-radius: 14px; padding: 6px;
+.bt-track::after{
+  content:'';position:absolute;
+  top:3px;left:3px;
+  width:22px;height:22px;
+  background:var(--muted);
+  border-radius:50%;
+  transition:.25s var(--ease);
+  box-shadow:0 2px 6px rgba(0,0,0,.4);
 }
-.tab-btn {
-  flex: 1; min-width: 100px;
-  display: flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 10px 14px; border-radius: 10px;
-  border: none; background: transparent;
-  font-family: var(--font-d); font-size: .68rem; font-weight: 700;
-  letter-spacing: .06em; color: var(--sub);
-  cursor: pointer; transition: var(--tr);
+.big-toggle input:checked ~ .bt-track{background:rgba(163,230,53,.2);border-color:rgba(163,230,53,.5)}
+.big-toggle input:checked ~ .bt-track::after{transform:translateX(28px);background:var(--lime);box-shadow:0 2px 10px var(--lime-glow)}
+
+/* ── mode selector ── */
+.mode-wrap{padding:0 18px 18px;display:flex;flex-direction:column;gap:8px}
+.mode-lbl{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.mode-pills{display:flex;gap:6px}
+.mode-pill{
+  flex:1;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:12px 8px;
+  border-radius:var(--r-sm);
+  border:1.5px solid var(--border);
+  background:rgba(255,255,255,.03);
+  cursor:pointer;
+  transition:.2s var(--ease);
+  color:var(--muted);
+  font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  user-select:none;
+  position:relative;overflow:hidden;
 }
-.tab-btn svg { width: 15px; height: 15px; }
-.tab-btn:hover { color: var(--cyan); background: var(--cyan-d); }
-.tab-btn.active { background: var(--cyan-d); color: var(--cyan); border: 1px solid var(--cyan-b); }
+.mode-pill svg{width:18px;height:18px;transition:.2s}
+.mode-pill:active{transform:scale(.95)}
+.mode-pill::after{content:'';position:absolute;inset:0;background:currentColor;opacity:0;transition:.15s}
+.mode-pill:hover::after{opacity:.04}
 
-/* ══════════════════════════════════════════════
-   SECTION / CARD
-══════════════════════════════════════════════ */
-.tab-panel { display: none; }
-.tab-panel.active { display: block; animation: fadeUp .35s ease both; }
-@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+.mode-pill.mp-on.active  {background:var(--lime-soft); border-color:rgba(163,230,53,.4); color:var(--lime); box-shadow:0 0 16px rgba(163,230,53,.15)}
+.mode-pill.mp-off.active {background:var(--rose-soft); border-color:rgba(251,113,133,.35);color:var(--rose); box-shadow:0 0 16px rgba(251,113,133,.12)}
+.mode-pill.mp-auto.active{background:var(--sky-soft);  border-color:rgba(56,189,248,.35); color:var(--sky);  box-shadow:0 0 16px rgba(56,189,248,.12)}
 
-.sec-hdr {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 18px;
+.mode-pill.mp-on:hover:not(.active)  {border-color:rgba(163,230,53,.25);color:var(--text2)}
+.mode-pill.mp-off:hover:not(.active) {border-color:rgba(251,113,133,.2); color:var(--text2)}
+.mode-pill.mp-auto:hover:not(.active){border-color:rgba(56,189,248,.2);  color:var(--text2)}
+
+.send-btn{
+  width:100%;padding:14px;border-radius:var(--r-xs);
+  border:none;cursor:pointer;
+  background:linear-gradient(135deg,rgba(163,230,53,.2),rgba(56,189,248,.15));
+  border:1px solid rgba(163,230,53,.25);
+  color:var(--lime);
+  font-family:inherit;font-size:.82rem;font-weight:700;letter-spacing:.02em;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:.2s var(--ease);
 }
-.sec-icon {
-  width: 36px; height: 36px; border-radius: 9px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+.send-btn:hover{background:linear-gradient(135deg,rgba(163,230,53,.28),rgba(56,189,248,.22));box-shadow:0 0 20px rgba(163,230,53,.18)}
+.send-btn:active{transform:scale(.98)}
+.send-btn svg{width:16px;height:16px}
+
+/* ── quick action strip ── */
+.quick-strip{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+  margin-bottom:20px;
 }
-.sec-icon.c  { background: var(--cyan-d); }
-.sec-icon.s  { background: var(--solar-d); }
-.sec-icon.g  { background: var(--green-d); }
-.sec-icon.p  { background: var(--purple-d); }
-.sec-icon.o  { background: var(--orange-d); }
-.sec-hdr h2 {
-  font-family: var(--font-d); font-size: .88rem; font-weight: 700;
-  letter-spacing: .07em;
+.qa-btn{
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  padding:16px 10px;
+  border-radius:var(--r-sm);
+  border:1px solid var(--border);
+  background:var(--surface);
+  cursor:pointer;
+  transition:.2s var(--ease);
+  font-family:inherit;font-size:.68rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);
 }
-.sec-line { flex:1; height:1px; background: linear-gradient(90deg, var(--border), transparent); }
+.qa-btn svg{width:22px;height:22px;transition:.2s}
+.qa-btn:hover{transform:translateY(-2px)}
+.qa-btn:active{transform:scale(.97)}
+.qa-btn.qa-on {border-color:rgba(163,230,53,.3);color:var(--lime)}
+.qa-btn.qa-off{border-color:rgba(251,113,133,.3);color:var(--rose)}
+.qa-btn.qa-auto{border-color:rgba(56,189,248,.3);color:var(--sky)}
+.qa-btn.qa-on:hover {background:var(--lime-soft);box-shadow:0 4px 20px rgba(163,230,53,.15)}
+.qa-btn.qa-off:hover{background:var(--rose-soft);box-shadow:0 4px 20px rgba(251,113,133,.12)}
+.qa-btn.qa-auto:hover{background:var(--sky-soft);box-shadow:0 4px 20px rgba(56,189,248,.1)}
 
-.card {
-  background: var(--glass);
-  border: 1px solid var(--border);
-  border-radius: var(--r-card);
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-  padding: 24px; margin-bottom: 16px;
-  position: relative; overflow: hidden;
-  transition: var(--tr);
+/* ── sensor card ── */
+.sensor-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:20px;
+  margin-bottom:12px;
+  display:flex;align-items:center;gap:16px;
 }
-.card::before {
-  content: '';
-  position: absolute; top:0; left:0; right:0; height:1px;
-  background: linear-gradient(90deg, transparent, rgba(0,212,255,.4), transparent);
+.sensor-icon{
+  width:52px;height:52px;border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
 }
-.card:hover { border-color: rgba(0,212,255,.3); transform: translateY(-1px); box-shadow: 0 8px 36px rgba(0,0,0,.4); }
-
-/* ══════════════════════════════════════════════
-   FORM ELEMENTS
-══════════════════════════════════════════════ */
-.form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 14px; }
-.form-grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 14px; }
-
-.field { display: flex; flex-direction: column; gap: 7px; }
-
-.field label {
-  font-size: .68rem; font-weight: 600; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--sub); font-family: var(--font-m);
-  display: flex; align-items: center; gap: 6px;
+.sensor-icon.day  {background:rgba(255,184,48,.15);box-shadow:0 0 20px rgba(255,184,48,.2)}
+.sensor-icon.night{background:rgba(124,77,255,.15)}
+.sensor-icon.unk  {background:rgba(255,255,255,.05)}
+.sensor-icon svg{width:26px;height:26px}
+.sensor-info{flex:1}
+.sensor-name{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.sensor-val{font-size:1.3rem;font-weight:800;letter-spacing:-.02em;color:var(--white)}
+.sensor-val.day  {color:var(--amber)}
+.sensor-val.night{color:#b48eff}
+.sensor-sub{font-size:.7rem;color:var(--muted);font-weight:500;margin-top:2px}
+.sensor-toggle{display:flex;gap:6px}
+.sens-pill{
+  padding:8px 14px;border-radius:99px;
+  font-size:.7rem;font-weight:700;
+  border:1.5px solid var(--border);
+  background:transparent;color:var(--muted);
+  cursor:pointer;font-family:inherit;
+  transition:.2s var(--ease);
 }
-.field label svg { width: 13px; height: 13px; }
+.sens-pill:hover{border-color:var(--border2);color:var(--text1)}
+.sens-pill.day-active {background:rgba(255,184,48,.15);border-color:rgba(255,184,48,.4);color:var(--amber)}
+.sens-pill.night-active{background:rgba(124,77,255,.15);border-color:rgba(124,77,255,.4);color:#b48eff}
 
-.inp, .sel, .textarea {
-  width: 100%;
-  background: rgba(0,0,0,.3);
-  border: 1px solid rgba(0,212,255,.18);
-  border-radius: var(--r-inp);
-  padding: 11px 14px;
-  color: var(--text);
-  font-family: var(--font-m); font-size: .82rem;
-  outline: none; transition: var(--tr);
-  -webkit-appearance: none; appearance: none;
+/* ── last updated bar ── */
+.update-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 16px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-xs);
+  margin-bottom:12px;
 }
-.inp::placeholder { color: var(--dim); }
-.inp:focus, .sel:focus, .textarea:focus {
-  border-color: var(--cyan);
-  box-shadow: 0 0 0 3px rgba(0,212,255,.12);
-  background: rgba(0,20,40,.5);
+.update-bar svg{width:14px;height:14px;color:var(--muted);flex-shrink:0}
+.update-bar span{font-size:.72rem;color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
+.update-bar span b{color:var(--text2);font-weight:600}
+
+/* ── toast ── */
+#toast-root{
+  position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  z-index:9000;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  pointer-events:none;
+  width:calc(100% - 32px);max-width:360px;
 }
-.inp.err { border-color: var(--red); box-shadow: 0 0 0 3px rgba(255,61,90,.1); }
-.inp.ok  { border-color: var(--green); }
-
-.sel { cursor: pointer; }
-.sel option { background: #071428; color: var(--text); }
-
-.textarea { min-height: 90px; resize: vertical; }
-
-.field-hint { font-size: .68rem; color: var(--dim); font-family: var(--font-m); }
-.field-err  { font-size: .68rem; color: var(--red);  font-family: var(--font-m); display: none; }
-.field-err.show { display: block; }
-
-/* ── TOGGLE SWITCH ── */
-.toggle-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px;
-  background: rgba(0,0,0,.25);
-  border: 1px solid var(--border);
-  border-radius: 11px;
-  cursor: pointer;
-  transition: var(--tr);
+.toast{
+  display:flex;align-items:center;gap:10px;
+  padding:13px 16px;border-radius:14px;
+  border:1px solid transparent;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  font-size:.8rem;font-weight:600;
+  pointer-events:all;width:100%;
+  animation:tUp .3s var(--ease) both;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
 }
-.toggle-row:hover { border-color: var(--cyan-b); }
-.toggle-label { display: flex; flex-direction: column; gap: 2px; }
-.toggle-label span:first-child { font-size: .82rem; font-weight: 600; color: var(--text); }
-.toggle-label span:last-child  { font-size: .68rem; color: var(--sub); font-family: var(--font-m); }
-.toggle-switch {
-  position: relative; width: 44px; height: 24px; flex-shrink: 0;
-}
-.toggle-switch input { opacity: 0; width: 0; height: 0; }
-.toggle-track {
-  position: absolute; inset: 0;
-  background: rgba(255,255,255,.08); border: 1px solid var(--border);
-  border-radius: 99px; cursor: pointer; transition: var(--tr);
-}
-.toggle-track::after {
-  content: ''; position: absolute;
-  top: 3px; left: 3px;
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  background: var(--sub);
-  transition: var(--tr);
-}
-.toggle-switch input:checked ~ .toggle-track { background: rgba(0,230,118,.2); border-color: var(--green); }
-.toggle-switch input:checked ~ .toggle-track::after { transform: translateX(20px); background: var(--green); }
+.toast.ok  {background:rgba(22,28,18,.95);border-color:rgba(163,230,53,.3);color:var(--lime)}
+.toast.err {background:rgba(28,16,18,.95);border-color:rgba(251,113,133,.3);color:var(--rose)}
+.toast.inf {background:rgba(16,22,28,.95);border-color:rgba(56,189,248,.3); color:var(--sky)}
+.toast.wrn {background:rgba(28,24,14,.95);border-color:rgba(255,184,48,.3); color:var(--amber)}
+.toast.fade{animation:tDown .3s var(--ease) forwards}
+.toast svg{width:16px;height:16px;flex-shrink:0}
+@keyframes tUp  {from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none}}
+@keyframes tDown{from{opacity:1;transform:none} to{opacity:0;transform:translateY(8px)}}
 
-/* ── RADIO GROUP ── */
-.radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
-.radio-opt {
-  flex: 1; min-width: 80px;
-  display: flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 10px 12px;
-  border: 1.5px solid var(--border); border-radius: 10px;
-  cursor: pointer; transition: var(--tr);
-  font-size: .75rem; font-weight: 600; font-family: var(--font-m); color: var(--sub);
-  user-select: none;
+/* ── footer ── */
+.footer{
+  padding:24px 0 32px;
+  text-align:center;
+  border-top:1px solid var(--border);
+  margin-top:24px;
 }
-.radio-opt input { display: none; }
-.radio-opt:hover { border-color: var(--cyan-b); color: var(--cyan); }
-.radio-opt.sel-on  { background: var(--green-d); border-color: var(--green);  color: var(--green); }
-.radio-opt.sel-off { background: var(--red-d);   border-color: var(--red);    color: var(--red); }
-.radio-opt.sel-auto{ background: var(--cyan-d);  border-color: var(--cyan);   color: var(--cyan); }
-.radio-opt svg { width: 15px; height: 15px; }
-
-/* ── BUTTONS ── */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 12px 22px;
-  border: 1.5px solid transparent; border-radius: var(--r-btn);
-  font-family: var(--font-d); font-size: .72rem; font-weight: 700;
-  letter-spacing: .07em; cursor: pointer;
-  transition: var(--tr); position: relative; overflow: hidden;
-  text-decoration: none;
+.footer-lbl{font-size:.68rem;color:var(--muted);font-weight:500;margin-bottom:12px}
+.footer-chips{display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
+.fchip{
+  display:flex;align-items:center;gap:5px;
+  padding:5px 10px;border-radius:99px;
+  background:var(--surface2);border:1px solid var(--border);
+  font-size:.65rem;font-weight:600;color:var(--muted);
 }
-.btn:active { transform: scale(.97); }
-.btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.fchip-dot{width:5px;height:5px;border-radius:50%;background:var(--lime);animation:blink 2.2s infinite}
 
-.btn-primary {
-  background: linear-gradient(135deg, rgba(0,212,255,.18), rgba(0,100,200,.18));
-  border-color: var(--cyan); color: var(--cyan);
-}
-.btn-primary:hover { background: var(--cyan-d); box-shadow: 0 0 20px rgba(0,212,255,.3); }
-
-.btn-success {
-  background: var(--green-d); border-color: var(--green); color: var(--green);
-}
-.btn-success:hover { box-shadow: 0 0 20px rgba(0,230,118,.25); }
-
-.btn-danger {
-  background: var(--red-d); border-color: var(--red); color: var(--red);
-}
-.btn-danger:hover { box-shadow: 0 0 20px rgba(255,61,90,.25); }
-
-.btn-solar {
-  background: var(--solar-d); border-color: var(--solar); color: var(--solar);
-}
-.btn-solar:hover { box-shadow: 0 0 20px rgba(255,195,0,.25); }
-
-.btn-ghost {
-  background: transparent; border-color: var(--border); color: var(--sub);
-}
-.btn-ghost:hover { border-color: var(--cyan); color: var(--cyan); }
-
-.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
-.btn-row .btn { flex: 1; min-width: 140px; }
-
-/* ── SPINNER inside button ── */
-.btn .spin { animation: spin .8s linear infinite; }
-
-/* ══════════════════════════════════════════════
-   STATUS LIVE PANEL
-══════════════════════════════════════════════ */
-.live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 12px; }
-
-.live-card {
-  background: rgba(0,0,0,.3);
-  border: 1px solid var(--border);
-  border-radius: 13px; padding: 16px;
-  display: flex; flex-direction: column; gap: 8px;
-  transition: var(--tr);
-}
-.live-card:hover { border-color: var(--cyan-b); }
-.lc-label { font-size: .64rem; font-family: var(--font-m); color: var(--sub); letter-spacing: .08em; text-transform: uppercase; }
-.lc-val   { font-family: var(--font-d); font-size: 1.2rem; font-weight: 700; color: var(--text); letter-spacing: .04em; }
-.lc-badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 9px; border-radius: 99px;
-  font-size: .62rem; font-weight: 700; font-family: var(--font-m); letter-spacing: .05em;
-}
-.lc-badge .d { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: pdot 2s ease-in-out infinite; }
-.badge-on   { background: var(--green-d);  color: var(--green);  border: 1px solid rgba(0,230,118,.25); }
-.badge-off  { background: var(--red-d);    color: var(--red);    border: 1px solid rgba(255,61,90,.25); }
-.badge-auto { background: var(--cyan-d);   color: var(--cyan);   border: 1px solid rgba(0,212,255,.25); }
-.badge-night{ background: var(--purple-d); color: #b48eff;       border: 1px solid rgba(124,77,255,.25); }
-.badge-day  { background: var(--solar-d);  color: var(--solar);  border: 1px solid rgba(255,195,0,.25); }
-.badge-unk  { background: rgba(0,0,0,.3);  color: var(--dim);    border: 1px solid var(--dim); }
-
-/* ══════════════════════════════════════════════
-   DB VIEWER
-══════════════════════════════════════════════ */
-#db-tree {
-  background: rgba(0,0,0,.4);
-  border: 1px solid var(--border);
-  border-radius: 12px; padding: 18px;
-  font-family: var(--font-m); font-size: .78rem;
-  color: #7ea8c9; max-height: 340px; overflow-y: auto;
-  white-space: pre-wrap; word-break: break-all;
-  line-height: 1.7;
-}
-#db-tree .key   { color: var(--cyan); }
-#db-tree .val-s { color: #a8d8a8; }
-#db-tree .val-n { color: var(--solar); }
-#db-tree .val-b { color: #b48eff; }
-#db-tree .brace { color: rgba(255,255,255,.35); }
-
-/* ══════════════════════════════════════════════
-   DIVIDER & MISC
-══════════════════════════════════════════════ */
-.divider { height: 1px; background: var(--border); margin: 20px 0; }
-.row-between { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-
-.badge-pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 5px 11px; border-radius: 99px;
-  font-size: .68rem; font-family: var(--font-m); font-weight: 600; letter-spacing: .04em;
-}
-.bp-cyan   { background: var(--cyan-d);   color: var(--cyan);  border: 1px solid rgba(0,212,255,.25); }
-.bp-solar  { background: var(--solar-d);  color: var(--solar); border: 1px solid rgba(255,195,0,.25); }
-.bp-green  { background: var(--green-d);  color: var(--green); border: 1px solid rgba(0,230,118,.25); }
-
-.info-box {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 14px 16px; border-radius: 11px;
-  border: 1px solid rgba(0,212,255,.2);
-  background: rgba(0,212,255,.05);
-  font-size: .78rem; color: var(--sub); margin-bottom: 16px;
-}
-.info-box svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--cyan); margin-top: 2px; }
-
-/* ══════════════════════════════════════════════
-   FOOTER
-══════════════════════════════════════════════ */
-footer {
-  margin-top: 44px; padding: 24px 0 10px;
-  border-top: 1px solid var(--border);
-}
-.ft { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
-.ft-badges { display: flex; flex-wrap: wrap; gap: 8px; }
-.ft-badge {
-  display: flex; align-items: center; gap: 6px;
-  padding: 6px 12px; border-radius: 99px;
-  border: 1px solid var(--border); background: rgba(7,20,40,.6);
-  font-size: .67rem; font-family: var(--font-m); color: var(--sub);
-  transition: var(--tr);
-}
-.ft-badge:hover { border-color: var(--cyan); color: var(--cyan); }
-.ft-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pdot 2s ease-in-out infinite; }
-.ft-copy { font-size: .65rem; color: var(--dim); font-family: var(--font-m); }
-
-/* ══════════════════════════════════════════════
-   RESPONSIVE
-══════════════════════════════════════════════ */
-@media(max-width:600px) {
-  #app { padding: 0 12px 40px; }
-  .form-grid, .form-grid-3 { grid-template-columns: 1fr; }
-  .live-grid { grid-template-columns: 1fr 1fr; }
-  .btn-row .btn { min-width: 100px; }
-  .tab-btn span { display: none; }
+/* ── responsive ── */
+@media(min-width:520px){
+  .page{padding:0 24px 40px}
 }
 </style>
 </head>
 <body>
 
-<!-- LOADING -->
-<div id="ls">
-  <div class="ls-icon">
-    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="32" cy="32" r="13" stroke="#ffc300" stroke-width="2.5"/>
-      <line x1="32" y1="4"  x2="32" y2="14" stroke="#ffc300" stroke-width="2" stroke-linecap="round"/>
-      <line x1="32" y1="50" x2="32" y2="60" stroke="#ffc300" stroke-width="2" stroke-linecap="round"/>
-      <line x1="4"  y1="32" x2="14" y2="32" stroke="#ffc300" stroke-width="2" stroke-linecap="round"/>
-      <line x1="50" y1="32" x2="60" y2="32" stroke="#ffc300" stroke-width="2" stroke-linecap="round"/>
-      <line x1="12" y1="12" x2="19" y2="19" stroke="#ffc300" stroke-width="2" stroke-linecap="round"/>
-      <line x1="45" y1="45" x2="52" y2="52" stroke="#ffc300" stroke-width="2" stroke-linecap="round"/>
-      <line x1="52" y1="12" x2="45" y2="19" stroke="#ffc300" stroke-width="2" stroke-linecap="round"/>
-      <line x1="19" y1="45" x2="12" y2="52" stroke="#ffc300" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-  </div>
-  <div class="ls-title">Smart Solar Street Light<br>Control Panel</div>
-  <div class="ls-bar"><div class="ls-fill"></div></div>
-  <div class="ls-msg" id="ls-msg">Initializing Firebase…</div>
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-sun"></div>
+  <div class="splash-label">Solar Street Lights</div>
+  <div class="splash-sub">Connecting to Firebase…</div>
+  <div class="splash-bar"><div class="splash-prog"></div></div>
 </div>
 
-<!-- TOAST -->
-<div id="toast-wrap"></div>
+<!-- TOASTS -->
+<div id="toast-root"></div>
 
 <!-- APP -->
-<div id="app">
+<div class="page">
 
-  <!-- HEADER -->
-  <header>
-    <div class="hdr">
-      <div class="logo">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="sun-orb">
         <svg viewBox="0 0 24 24" fill="none">
-          <path d="M12 2L22 20H2Z" stroke="#ffc300" stroke-width="1.5" stroke-linejoin="round"/>
-          <circle cx="12" cy="12" r="3" fill="#00d4ff"/>
-          <line x1="12" y1="15" x2="12" y2="20" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="12" cy="12" r="5" fill="white"/>
+          <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
       </div>
-      <div class="hdr-text">
-        <h1>Smart Solar Street Light — Control Panel</h1>
-        <p>Firebase Realtime Database · ESP32 DevKit V1 · Tamil Nadu</p>
-      </div>
-      <div class="hdr-pills">
-        <div class="pill wait" id="fb-pill">
-          <span class="pdot"></span>
-          <span id="fb-pill-txt">Connecting…</span>
-        </div>
-        <a href="index.html" class="pill" style="background:var(--solar-d);border-color:rgba(255,195,0,.3);color:var(--solar);text-decoration:none">
-          <span>⟵</span><span>Dashboard</span>
-        </a>
+      <div>
+        <div class="topbar-title">Street Lights</div>
+        <div class="topbar-sub">Tamil Nadu, India</div>
       </div>
     </div>
-  </header>
+    <div class="conn-badge wait" id="conn-pill">
+      <span class="conn-dot"></span>
+      <span id="conn-txt">Connecting</span>
+    </div>
+  </div>
 
-  <!-- TAB NAV -->
-  <div class="tab-nav">
-    <button class="tab-btn active" onclick="switchTab('control',this)">
-      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span>CONTROL</span>
+  <!-- HERO -->
+  <div class="hero-banner">
+    <div class="hero-row">
+      <div style="flex:1">
+        <div class="hero-greeting">Smart Solar System</div>
+        <div class="hero-title">Good Evening 🌙</div>
+        <div class="hero-sub">2 solar street lights · Thiruvallur District</div>
+      </div>
+      <div class="hero-time" id="hero-clock">—</div>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat on">
+        <div class="hstat-val" id="stat-on">—</div>
+        <div class="hstat-lbl">Lights On</div>
+      </div>
+      <div class="hstat off">
+        <div class="hstat-val" id="stat-off">—</div>
+        <div class="hstat-lbl">Lights Off</div>
+      </div>
+      <div class="hstat auto">
+        <div class="hstat-val" id="stat-auto">—</div>
+        <div class="hstat-lbl">Auto Mode</div>
+      </div>
+      <div class="hstat day">
+        <div class="hstat-val" id="stat-dn">—</div>
+        <div class="hstat-lbl">Condition</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAST UPDATED -->
+  <div class="update-bar">
+    <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Last update: <b id="last-ts">Waiting…</b></span>
+  </div>
+
+  <!-- QUICK ACTIONS -->
+  <div class="sec-lbl">Quick actions — both lights</div>
+  <div class="quick-strip">
+    <button class="qa-btn qa-on" onclick="setBoth('FORCE_ON')">
+      <svg viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="4" fill="currentColor"/>
+        <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      All On
     </button>
-    <button class="tab-btn" onclick="switchTab('status',this)">
-      <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 21h8M12 17v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span>LIVE STATUS</span>
+    <button class="qa-btn qa-off" onclick="setBoth('FORCE_OFF')">
+      <svg viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M4.93 4.93l14.14 14.14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      All Off
     </button>
-    <button class="tab-btn" onclick="switchTab('config',this)">
-      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.8"/></svg>
-      <span>CONFIG</span>
-    </button>
-    <button class="tab-btn" onclick="switchTab('db',this)">
-      <svg viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="5" rx="9" ry="3" stroke="currentColor" stroke-width="1.8"/><path d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12" stroke="currentColor" stroke-width="1.8"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" stroke="currentColor" stroke-width="1.8"/></svg>
-      <span>DATABASE</span>
+    <button class="qa-btn qa-auto" onclick="setBoth('AUTO')">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 3a9 9 0 1 0 9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M17 3h4v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      All Auto
     </button>
   </div>
 
-  <!-- ══ TAB: CONTROL ══ -->
-  <div id="tab-control" class="tab-panel active">
+  <!-- LIGHTS -->
+  <div class="sec-lbl">Individual lights</div>
 
-    <div class="info-box">
-      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span>Changes are written to Firebase instantly. The ESP32 reads the mode and adjusts the light accordingly. <strong style="color:var(--cyan)">AUTO</strong> = sensor-controlled, <strong style="color:var(--green)">FORCE_ON</strong> = always on, <strong style="color:var(--red)">FORCE_OFF</strong> = always off.</span>
+  <!-- LIGHT 1 -->
+  <div class="light-card" id="card-l1">
+    <div class="lc-head">
+      <div class="lc-icon off" id="icon-l1">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path class="bulb-fill" d="M9 21h6M12 3a6 6 0 0 1 4 10.47V17H8v-3.53A6 6 0 0 1 12 3z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 17h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="lc-meta">
+        <div class="lc-name">Street Light 1</div>
+        <div class="lc-loc">📍 RMKCET, Thiruvallur</div>
+      </div>
+      <div class="lc-status-pill sp-unk" id="pill-l1"><span class="sp-dot"></span><span id="pill-l1-txt">—</span></div>
     </div>
 
-    <!-- Light 1 -->
-    <div class="card" style="margin-bottom:16px">
-      <div class="row-between" style="margin-bottom:18px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:34px;height:34px;border-radius:9px;background:var(--cyan-d);border:1px solid var(--cyan-b);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:.78rem;font-weight:700;color:var(--cyan)">L1</div>
-          <div>
-            <div style="font-family:var(--font-d);font-size:.85rem;font-weight:700;letter-spacing:.06em">STREET LIGHT 1</div>
-            <div style="font-size:.68rem;color:var(--sub);font-family:var(--font-m)">RMKCET · 13.3568°N, 80.1422°E</div>
-          </div>
-        </div>
-        <div id="l1-live-badge" class="lc-badge badge-unk"><span class="d"></span><span id="l1-live-txt">—</span></div>
-      </div>
+    <div class="lc-divider"></div>
 
-      <div class="field" style="margin-bottom:16px">
-        <label>
-          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 1v3M12 20v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          Control Mode
-        </label>
-        <div class="radio-group" id="l1-mode-grp">
-          <label class="radio-opt sel-on" id="l1-opt-on" onclick="selectMode('light1','FORCE_ON')">
-            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            FORCE ON
-          </label>
-          <label class="radio-opt sel-off" id="l1-opt-off" onclick="selectMode('light1','FORCE_OFF')">
-            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.8"/><line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            FORCE OFF
-          </label>
-          <label class="radio-opt sel-auto" id="l1-opt-auto" onclick="selectMode('light1','AUTO')">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 1 0 9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 3h5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            AUTO
-          </label>
-        </div>
+    <!-- power toggle -->
+    <div class="big-toggle-wrap">
+      <div class="bt-label">
+        <span id="l1-toggle-lbl">Light is off</span>
+        <span id="l1-toggle-sub">Tap to override</span>
       </div>
-
-      <div class="form-grid">
-        <div class="field">
-          <label>Status (read-only)</label>
-          <input class="inp" id="l1-status-inp" readonly placeholder="Reading from Firebase…" />
-        </div>
-        <div class="field">
-          <label>Current Mode (read-only)</label>
-          <input class="inp" id="l1-mode-inp" readonly placeholder="Reading from Firebase…" />
-        </div>
-      </div>
-
-      <div class="btn-row">
-        <button class="btn btn-success" onclick="sendMode('light1')">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Send to Firebase
-        </button>
-        <button class="btn btn-ghost" onclick="resetToAuto('light1')">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 3v5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Reset to AUTO
-        </button>
-      </div>
+      <label class="big-toggle">
+        <input type="checkbox" id="l1-toggle" onchange="handleToggle('light1',this.checked)"/>
+        <div class="bt-track"></div>
+      </label>
     </div>
 
-    <!-- Light 2 -->
-    <div class="card">
-      <div class="row-between" style="margin-bottom:18px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:34px;height:34px;border-radius:9px;background:var(--solar-d);border:1px solid rgba(255,195,0,.25);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:.78rem;font-weight:700;color:var(--solar)">L2</div>
-          <div>
-            <div style="font-family:var(--font-d);font-size:.85rem;font-weight:700;letter-spacing:.06em">STREET LIGHT 2</div>
-            <div style="font-size:.68rem;color:var(--sub);font-family:var(--font-m)">Murali House · 13.3125°N, 79.8972°E</div>
-          </div>
-        </div>
-        <div id="l2-live-badge" class="lc-badge badge-unk"><span class="d"></span><span id="l2-live-txt">—</span></div>
-      </div>
+    <div class="lc-divider"></div>
 
-      <div class="field" style="margin-bottom:16px">
-        <label>
-          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 1v3M12 20v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          Control Mode
-        </label>
-        <div class="radio-group" id="l2-mode-grp">
-          <label class="radio-opt sel-on" id="l2-opt-on" onclick="selectMode('light2','FORCE_ON')">
-            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            FORCE ON
-          </label>
-          <label class="radio-opt sel-off" id="l2-opt-off" onclick="selectMode('light2','FORCE_OFF')">
-            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.8"/><line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            FORCE OFF
-          </label>
-          <label class="radio-opt sel-auto" id="l2-opt-auto" onclick="selectMode('light2','AUTO')">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 1 0 9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 3h5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            AUTO
-          </label>
+    <!-- mode pills -->
+    <div class="mode-wrap">
+      <div class="mode-lbl">Control mode</div>
+      <div class="mode-pills">
+        <div class="mode-pill mp-on"   id="l1-mp-on"   onclick="pickMode('light1','FORCE_ON')">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Force On
+        </div>
+        <div class="mode-pill mp-off"  id="l1-mp-off"  onclick="pickMode('light1','FORCE_OFF')">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.8"/><path d="M4.93 4.93l14.14 14.14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Force Off
+        </div>
+        <div class="mode-pill mp-auto" id="l1-mp-auto" onclick="pickMode('light1','AUTO')">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 1 0 9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17 3h4v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Auto
         </div>
       </div>
+      <button class="send-btn" onclick="applyMode('light1')">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Apply changes
+      </button>
+    </div>
+  </div>
 
-      <div class="form-grid">
-        <div class="field">
-          <label>Status (read-only)</label>
-          <input class="inp" id="l2-status-inp" readonly placeholder="Reading from Firebase…" />
-        </div>
-        <div class="field">
-          <label>Current Mode (read-only)</label>
-          <input class="inp" id="l2-mode-inp" readonly placeholder="Reading from Firebase…" />
-        </div>
+  <!-- LIGHT 2 -->
+  <div class="light-card" id="card-l2">
+    <div class="lc-head">
+      <div class="lc-icon off" id="icon-l2">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path class="bulb-fill" d="M9 21h6M12 3a6 6 0 0 1 4 10.47V17H8v-3.53A6 6 0 0 1 12 3z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 17h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
       </div>
-
-      <div class="btn-row">
-        <button class="btn btn-success" onclick="sendMode('light2')">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Send to Firebase
-        </button>
-        <button class="btn btn-ghost" onclick="resetToAuto('light2')">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 3v5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Reset to AUTO
-        </button>
+      <div class="lc-meta">
+        <div class="lc-name">Street Light 2</div>
+        <div class="lc-loc">📍 Murali House, Thiruvallur</div>
       </div>
+      <div class="lc-status-pill sp-unk" id="pill-l2"><span class="sp-dot"></span><span id="pill-l2-txt">—</span></div>
     </div>
 
-    <!-- Both Lights Quick Actions -->
-    <div class="card" style="margin-top:4px">
-      <div style="font-family:var(--font-d);font-size:.82rem;font-weight:700;letter-spacing:.07em;margin-bottom:14px;color:var(--sub)">⚡ QUICK ACTIONS — BOTH LIGHTS</div>
-      <div class="btn-row">
-        <button class="btn btn-success" onclick="setBoth('FORCE_ON')">
-          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          All ON
-        </button>
-        <button class="btn btn-danger" onclick="setBoth('FORCE_OFF')">
-          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.8"/><line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          All OFF
-        </button>
-        <button class="btn btn-primary" onclick="setBoth('AUTO')">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 1 0 9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 3h5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          All AUTO
-        </button>
+    <div class="lc-divider"></div>
+
+    <div class="big-toggle-wrap">
+      <div class="bt-label">
+        <span id="l2-toggle-lbl">Light is off</span>
+        <span id="l2-toggle-sub">Tap to override</span>
       </div>
+      <label class="big-toggle">
+        <input type="checkbox" id="l2-toggle" onchange="handleToggle('light2',this.checked)"/>
+        <div class="bt-track"></div>
+      </label>
     </div>
 
-  </div><!-- /tab-control -->
+    <div class="lc-divider"></div>
 
-  <!-- ══ TAB: LIVE STATUS ══ -->
-  <div id="tab-status" class="tab-panel">
-
-    <div class="card">
-      <div class="row-between" style="margin-bottom:16px">
-        <div style="font-family:var(--font-d);font-size:.82rem;font-weight:700;letter-spacing:.07em">REAL-TIME READINGS</div>
-        <div style="font-family:var(--font-m);font-size:.68rem;color:var(--sub)" id="last-ts">—</div>
-      </div>
-      <div class="live-grid">
-        <div class="live-card">
-          <div class="lc-label">Light 1 Status</div>
-          <div class="lc-val" id="ls-l1-status">—</div>
-          <div class="lc-badge badge-unk" id="ls-l1-badge"><span class="d"></span><span id="ls-l1-btxt">—</span></div>
+    <div class="mode-wrap">
+      <div class="mode-lbl">Control mode</div>
+      <div class="mode-pills">
+        <div class="mode-pill mp-on"   id="l2-mp-on"   onclick="pickMode('light2','FORCE_ON')">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Force On
         </div>
-        <div class="live-card">
-          <div class="lc-label">Light 1 Mode</div>
-          <div class="lc-val" id="ls-l1-mode" style="font-size:.9rem">—</div>
-          <div class="lc-badge badge-auto" id="ls-l1-mbadge"><span class="d"></span><span id="ls-l1-mtxt">—</span></div>
+        <div class="mode-pill mp-off"  id="l2-mp-off"  onclick="pickMode('light2','FORCE_OFF')">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.8"/><path d="M4.93 4.93l14.14 14.14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Force Off
         </div>
-        <div class="live-card">
-          <div class="lc-label">Light 2 Status</div>
-          <div class="lc-val" id="ls-l2-status">—</div>
-          <div class="lc-badge badge-unk" id="ls-l2-badge"><span class="d"></span><span id="ls-l2-btxt">—</span></div>
-        </div>
-        <div class="live-card">
-          <div class="lc-label">Light 2 Mode</div>
-          <div class="lc-val" id="ls-l2-mode" style="font-size:.9rem">—</div>
-          <div class="lc-badge badge-auto" id="ls-l2-mbadge"><span class="d"></span><span id="ls-l2-mtxt">—</span></div>
-        </div>
-        <div class="live-card" style="grid-column: span 2">
-          <div class="lc-label">Day / Night Sensor</div>
-          <div class="lc-val" id="ls-dn" style="font-size:1rem">—</div>
-          <div class="lc-badge badge-unk" id="ls-dn-badge"><span class="d"></span><span id="ls-dn-txt">—</span></div>
+        <div class="mode-pill mp-auto" id="l2-mp-auto" onclick="pickMode('light2','AUTO')">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 1 0 9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17 3h4v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Auto
         </div>
       </div>
+      <button class="send-btn" onclick="applyMode('light2')">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Apply changes
+      </button>
     </div>
+  </div>
 
-    <!-- Manual Sensor Override -->
-    <div class="card">
-      <div style="font-family:var(--font-d);font-size:.82rem;font-weight:700;letter-spacing:.07em;margin-bottom:14px">SENSOR OVERRIDE (Write to DB)</div>
-      <div class="form-grid">
-        <div class="field">
-          <label>Day / Night Value</label>
-          <select class="sel" id="dn-sel">
-            <option value="DAY">DAY</option>
-            <option value="NIGHT">NIGHT</option>
-          </select>
-          <span class="field-hint">This writes to /daynight in Firebase</span>
-        </div>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-solar" onclick="writeDayNight()">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Write Sensor Value
-        </button>
-      </div>
+  <!-- SENSOR -->
+  <div class="sec-lbl">Ambient sensor</div>
+  <div class="sensor-card" id="sensor-card">
+    <div class="sensor-icon unk" id="sensor-icon">
+      <svg viewBox="0 0 24 24" fill="none" id="sensor-svg">
+        <circle cx="12" cy="12" r="5" stroke="#ffb830" stroke-width="1.8"/>
+        <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="#ffb830" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
     </div>
-
-  </div><!-- /tab-status -->
-
-  <!-- ══ TAB: CONFIG ══ -->
-  <div id="tab-config" class="tab-panel">
-
-    <div class="card">
-      <div style="font-family:var(--font-d);font-size:.82rem;font-weight:700;letter-spacing:.07em;margin-bottom:18px">🔧 FIREBASE PROJECT CONFIG</div>
-
-      <div class="form-grid" style="margin-bottom:14px">
-        <div class="field">
-          <label>Project ID</label>
-          <input class="inp ok" readonly value="smart-solar-street-light-221a9"/>
-        </div>
-        <div class="field">
-          <label>App ID</label>
-          <input class="inp ok" readonly value="1:1008018383388:web:dc266ead19ad13294c75d9"/>
-        </div>
-        <div class="field">
-          <label>Database Region</label>
-          <input class="inp ok" readonly value="asia-southeast1 (Singapore)"/>
-        </div>
-        <div class="field">
-          <label>Messaging Sender ID</label>
-          <input class="inp ok" readonly value="1008018383388"/>
-        </div>
-      </div>
-
-      <div class="field" style="margin-bottom:14px">
-        <label>Database URL</label>
-        <input class="inp ok" readonly value="https://smart-solar-street-light-221a9-default-rtdb.asia-southeast1.firebasedatabase.app"/>
-      </div>
-      <div class="field" style="margin-bottom:14px">
-        <label>Auth Domain</label>
-        <input class="inp ok" readonly value="smart-solar-street-light-221a9.firebaseapp.com"/>
-      </div>
-      <div class="field">
-        <label>API Key</label>
-        <input class="inp ok" type="password" id="api-key-inp" readonly value="AIzaSyA5IjgS-x7SzzKQ3bxRAm3Jruow8Q8Zg8c"/>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-          <button class="btn btn-ghost" style="padding:6px 12px;font-size:.65rem" onclick="toggleApiKey()">Show / Hide Key</button>
-          <span class="field-hint">Keep this private — do not share publicly</span>
-        </div>
-      </div>
+    <div class="sensor-info">
+      <div class="sensor-name">Day / Night Sensor</div>
+      <div class="sensor-val" id="sensor-val">—</div>
+      <div class="sensor-sub" id="sensor-sub">Reading ambient light…</div>
     </div>
-
-    <!-- Firebase DB Paths -->
-    <div class="card">
-      <div style="font-family:var(--font-d);font-size:.82rem;font-weight:700;letter-spacing:.07em;margin-bottom:18px">📂 DATABASE PATHS</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;gap:12px;flex-wrap:wrap">
-          <span style="font-family:var(--font-m);font-size:.75rem;color:var(--cyan)">/light1/mode</span>
-          <span style="font-size:.72rem;color:var(--sub)">Controls Street Light 1 mode</span>
-          <span class="badge-pill bp-cyan">WRITE</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;gap:12px;flex-wrap:wrap">
-          <span style="font-family:var(--font-m);font-size:.75rem;color:var(--cyan)">/light1/status</span>
-          <span style="font-size:.72rem;color:var(--sub)">Written by ESP32 — ON / OFF</span>
-          <span class="badge-pill bp-solar">READ</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;gap:12px;flex-wrap:wrap">
-          <span style="font-family:var(--font-m);font-size:.75rem;color:var(--cyan)">/light2/mode</span>
-          <span style="font-size:.72rem;color:var(--sub)">Controls Street Light 2 mode</span>
-          <span class="badge-pill bp-cyan">WRITE</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;gap:12px;flex-wrap:wrap">
-          <span style="font-family:var(--font-m);font-size:.75rem;color:var(--cyan)">/light2/status</span>
-          <span style="font-size:.72rem;color:var(--sub)">Written by ESP32 — ON / OFF</span>
-          <span class="badge-pill bp-solar">READ</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;gap:12px;flex-wrap:wrap">
-          <span style="font-family:var(--font-m);font-size:.75rem;color:var(--cyan)">/daynight</span>
-          <span style="font-size:.72rem;color:var(--sub)">Ambient sensor — DAY / NIGHT</span>
-          <span class="badge-pill bp-green">READ / WRITE</span>
-        </div>
-      </div>
+    <div class="sensor-toggle">
+      <button class="sens-pill" id="btn-day"   onclick="writeSensor('DAY')">☀ Day</button>
+      <button class="sens-pill" id="btn-night" onclick="writeSensor('NIGHT')">🌙 Night</button>
     </div>
-
-    <!-- ESP32 Reference -->
-    <div class="card">
-      <div style="font-family:var(--font-d);font-size:.82rem;font-weight:700;letter-spacing:.07em;margin-bottom:16px">📟 ESP32 FIREBASE WRITE EXAMPLE</div>
-      <div id="db-tree" style="max-height:200px">
-<span class="brace">// ESP32 Arduino code snippet</span>
-<span class="key">Firebase.setString</span>(fbdo, <span class="val-s">"/light1/status"</span>, <span class="val-s">"ON"</span>);
-<span class="key">Firebase.setString</span>(fbdo, <span class="val-s">"/light1/mode"</span>,   <span class="val-s">"AUTO"</span>);
-<span class="key">Firebase.setString</span>(fbdo, <span class="val-s">"/light2/status"</span>, <span class="val-s">"OFF"</span>);
-<span class="key">Firebase.setString</span>(fbdo, <span class="val-s">"/light2/mode"</span>,   <span class="val-s">"AUTO"</span>);
-<span class="key">Firebase.setString</span>(fbdo, <span class="val-s">"/daynight"</span>,      <span class="val-s">"NIGHT"</span>);
-      </div>
-    </div>
-
-  </div><!-- /tab-config -->
-
-  <!-- ══ TAB: DATABASE ══ -->
-  <div id="tab-db" class="tab-panel">
-
-    <div class="card">
-      <div class="row-between" style="margin-bottom:16px">
-        <div style="font-family:var(--font-d);font-size:.82rem;font-weight:700;letter-spacing:.07em">LIVE DATABASE VIEWER</div>
-        <button class="btn btn-ghost" style="padding:7px 14px;font-size:.68rem" onclick="refreshDB()">
-          <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 3v5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Refresh
-        </button>
-      </div>
-      <div id="db-tree-live" class="db-tree" style="background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:12px;padding:18px;font-family:var(--font-m);font-size:.78rem;color:#7ea8c9;max-height:380px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;line-height:1.9">
-        <span style="color:var(--dim)">Waiting for Firebase data…</span>
-      </div>
-    </div>
-
-    <!-- Custom Path Write -->
-    <div class="card">
-      <div style="font-family:var(--font-d);font-size:.82rem;font-weight:700;letter-spacing:.07em;margin-bottom:16px">✍️ CUSTOM PATH WRITE</div>
-      <div class="info-box">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="1.8"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <span>Write any key-value directly to Firebase. Use paths like <strong style="color:var(--cyan)">/light1/mode</strong> and values like <strong style="color:var(--green)">FORCE_ON</strong>, <strong style="color:var(--red)">FORCE_OFF</strong>, or <strong style="color:var(--cyan)">AUTO</strong>.</span>
-      </div>
-      <div class="form-grid">
-        <div class="field">
-          <label>Firebase Path</label>
-          <input class="inp" id="custom-path" placeholder="/light1/mode" />
-          <span class="field-hint">Start with /</span>
-          <span class="field-err" id="path-err">Please enter a valid path starting with /</span>
-        </div>
-        <div class="field">
-          <label>Value</label>
-          <input class="inp" id="custom-val" placeholder="FORCE_ON" />
-          <span class="field-hint">String value to write</span>
-          <span class="field-err" id="val-err">Value cannot be empty</span>
-        </div>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="customWrite()">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Write to Firebase
-        </button>
-        <button class="btn btn-ghost" onclick="document.getElementById('custom-path').value='';document.getElementById('custom-val').value=''">
-          Clear
-        </button>
-      </div>
-    </div>
-
-  </div><!-- /tab-db -->
+  </div>
 
   <!-- FOOTER -->
-  <footer>
-    <div class="ft">
-      <div class="ft-badges">
-        <div class="ft-badge"><span class="ft-dot"></span>ESP32 DevKit V1</div>
-        <div class="ft-badge"><span class="ft-dot"></span>Firebase RTDB</div>
-        <div class="ft-badge"><span class="ft-dot"></span>GitHub Pages</div>
-      </div>
-      <div class="ft-copy">Smart Solar Street Light · Control Form · Tamil Nadu, India</div>
+  <div class="footer">
+    <div class="footer-lbl">Powered by ESP32 + Firebase + Solar Energy</div>
+    <div class="footer-chips">
+      <div class="fchip"><span class="fchip-dot"></span>ESP32 DevKit V1</div>
+      <div class="fchip"><span class="fchip-dot"></span>Firebase RTDB</div>
+      <div class="fchip"><span class="fchip-dot"></span>GitHub Pages</div>
     </div>
-  </footer>
+  </div>
 
-</div><!-- /#app -->
+</div><!-- /page -->
 
-<!-- ════════════════════ SCRIPTS ════════════════════ -->
 <script>
-/* ── FIREBASE INIT ── */
-const firebaseConfig = {
-  apiKey:            "AIzaSyA5IjgS-x7SzzKQ3bxRAm3Jruow8Q8Zg8c",
-  authDomain:        "smart-solar-street-light-221a9.firebaseapp.com",
-  databaseURL:       "https://smart-solar-street-light-221a9-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId:         "smart-solar-street-light-221a9",
-  storageBucket:     "smart-solar-street-light-221a9.firebasestorage.app",
-  messagingSenderId: "1008018383388",
-  appId:             "1:1008018383388:web:dc266ead19ad13294c75d9"
-};
-firebase.initializeApp(firebaseConfig);
+/* ── Firebase ── */
+firebase.initializeApp({
+  apiKey:"AIzaSyA5IjgS-x7SzzKQ3bxRAm3Jruow8Q8Zg8c",
+  authDomain:"smart-solar-street-light-221a9.firebaseapp.com",
+  databaseURL:"https://smart-solar-street-light-221a9-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"smart-solar-street-light-221a9",
+  storageBucket:"smart-solar-street-light-221a9.firebasestorage.app",
+  messagingSenderId:"1008018383388",
+  appId:"1:1008018383388:web:dc266ead19ad13294c75d9"
+});
 const db = firebase.database();
 
-/* ── STATE ── */
+/* ── State ── */
 const S = {
-  light1: { status: '—', mode: '—' },
-  light2: { status: '—', mode: '—' },
-  dayNight: '—',
-  selected: { light1: 'AUTO', light2: 'AUTO' }
+  light1:{status:'—',mode:'—'},
+  light2:{status:'—',mode:'—'},
+  dayNight:'—',
+  pending:{light1:null,light2:null}
 };
 
-/* ── LOADING ── */
-const lsMsgs = ['Initializing Firebase…','Connecting to database…','Loading sensor data…','Ready!'];
-let lmi = 0;
-const lsEl = document.getElementById('ls-msg');
-const lsTimer = setInterval(() => {
-  lmi++;
-  if (lmi < lsMsgs.length) lsEl.textContent = lsMsgs[lmi];
-  else { clearInterval(lsTimer); setTimeout(() => document.getElementById('ls').classList.add('hide'), 400); }
-}, 550);
+/* ── Splash ── */
+setTimeout(()=>document.getElementById('splash').classList.add('gone'),2200);
 
-/* ── TOAST ── */
-function toast(msg, type='info') {
-  const icons = { success:'✓', error:'✗', info:'ℹ', warning:'⚠' };
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.innerHTML = `<span>${icons[type]||'ℹ'}</span><span>${msg}</span>`;
-  document.getElementById('toast-wrap').appendChild(el);
-  setTimeout(() => { el.classList.add('out'); el.addEventListener('animationend', () => el.remove()); }, 3500);
+/* ── Clock ── */
+function tickClock(){
+  const now=new Date();
+  document.getElementById('hero-clock').textContent=now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+  const h=now.getHours();
+  const greet=h<12?'Good Morning ☀️':h<17?'Good Afternoon 🌤':h<20?'Good Evening 🌆':'Good Night 🌙';
+  document.querySelector('.hero-title').textContent=greet;
+}
+tickClock();setInterval(tickClock,1000);
+
+/* ── Toast ── */
+function toast(msg,type='inf'){
+  const icons={ok:'✓',err:'✗',inf:'ℹ',wrn:'⚠'};
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.innerHTML=`<svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/></svg><span>${msg}</span>`;
+  document.getElementById('toast-root').appendChild(el);
+  setTimeout(()=>{el.classList.add('fade');el.addEventListener('animationend',()=>el.remove());},3200);
 }
 
-/* ── TAB SWITCH ── */
-function switchTab(id, btn) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + id).classList.add('active');
-  btn.classList.add('active');
+/* ── Normalize ── */
+function nS(v){
+  if(!v)return'—';
+  const s=String(v).trim().toUpperCase();
+  return s==='ON'||s==='1'||s==='TRUE'?'ON':s==='OFF'||s==='0'||s==='FALSE'?'OFF':v;
+}
+function nM(v){
+  if(!v)return'—';
+  const s=String(v).trim().toUpperCase();
+  return s==='AUTO'?'AUTO':(s==='FORCE_ON'||s==='ON')?'FORCE_ON':(s==='FORCE_OFF'||s==='OFF')?'FORCE_OFF':s;
 }
 
-/* ── NORMALIZE ── */
-function nStatus(v) {
-  if (!v) return '—';
-  const s = String(v).trim().toUpperCase();
-  return s==='ON'||s==='1'||s==='TRUE' ? 'ON' : s==='OFF'||s==='0'||s==='FALSE' ? 'OFF' : v;
-}
-function nMode(v) {
-  if (!v) return '—';
-  const s = String(v).trim().toUpperCase();
-  return s==='AUTO' ? 'AUTO' : (s==='FORCE_ON'||s==='ON') ? 'FORCE_ON' : (s==='FORCE_OFF'||s==='OFF') ? 'FORCE_OFF' : s;
-}
+/* ── Update DOM ── */
+function updateUI(){
+  const {light1:l1,light2:l2,dayNight:dn}=S;
 
-/* ── UPDATE UI ── */
-function updateUI() {
-  const { light1: l1, light2: l2, dayNight: dn } = S;
+  // Stats bar
+  const onCount=[l1,l2].filter(l=>l.status==='ON').length;
+  const offCount=[l1,l2].filter(l=>l.status==='OFF').length;
+  const autoCount=[l1,l2].filter(l=>l.mode==='AUTO').length;
+  document.getElementById('stat-on').textContent=onCount;
+  document.getElementById('stat-off').textContent=offCount;
+  document.getElementById('stat-auto').textContent=autoCount;
+  document.getElementById('stat-dn').textContent=dn==='NIGHT'?'Night':dn==='DAY'?'Day':'—';
 
-  // Control tab
-  document.getElementById('l1-status-inp').value = l1.status;
-  document.getElementById('l1-mode-inp').value   = l1.mode;
-  document.getElementById('l2-status-inp').value = l2.status;
-  document.getElementById('l2-mode-inp').value   = l2.mode;
+  // Light 1
+  applyLightCard('l1','light1',l1);
+  // Light 2
+  applyLightCard('l2','light2',l2);
 
-  // Live badges in control
-  setLiveBadge('l1-live-badge','l1-live-txt', l1.status);
-  setLiveBadge('l2-live-badge','l2-live-txt', l2.status);
+  // Sensor
+  const isNight=dn==='NIGHT';const isDay=dn==='DAY';
+  document.getElementById('sensor-val').textContent=dn;
+  document.getElementById('sensor-val').className='sensor-val '+(isNight?'night':isDay?'day':'');
+  document.getElementById('sensor-sub').textContent=isNight?'Lights will auto-on in AUTO mode':isDay?'Lights will auto-off in AUTO mode':'Awaiting ESP32 data';
+  const si=document.getElementById('sensor-icon');
+  si.className='sensor-icon '+(isNight?'night':isDay?'day':'unk');
+  document.getElementById('btn-day').className='sens-pill'+(isDay?' day-active':'');
+  document.getElementById('btn-night').className='sens-pill'+(isNight?' night-active':'');
 
-  // Status tab
-  document.getElementById('ls-l1-status').textContent = l1.status;
-  document.getElementById('ls-l1-mode').textContent   = l1.mode;
-  document.getElementById('ls-l2-status').textContent = l2.status;
-  document.getElementById('ls-l2-mode').textContent   = l2.mode;
-  document.getElementById('ls-dn').textContent         = dn;
-
-  setLiveBadge('ls-l1-badge','ls-l1-btxt', l1.status);
-  setModeBadge('ls-l1-mbadge','ls-l1-mtxt', l1.mode);
-  setLiveBadge('ls-l2-badge','ls-l2-btxt', l2.status);
-  setModeBadge('ls-l2-mbadge','ls-l2-mtxt', l2.mode);
-  setDNBadge('ls-dn-badge','ls-dn-txt', dn);
-
-  document.getElementById('last-ts').textContent =
-    'Updated: ' + new Date().toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-
-  // Highlight active radio buttons based on live mode
-  updateRadioHighlight('light1', l1.mode);
-  updateRadioHighlight('light2', l2.mode);
+  // Timestamp
+  document.getElementById('last-ts').textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 
-function setLiveBadge(badgeId, txtId, status) {
-  const el = document.getElementById(badgeId);
-  const tx = document.getElementById(txtId);
-  el.className = 'lc-badge ' + (status==='ON' ? 'badge-on' : status==='OFF' ? 'badge-off' : 'badge-unk');
-  tx.textContent = status;
-}
-function setModeBadge(badgeId, txtId, mode) {
-  const el = document.getElementById(badgeId);
-  const tx = document.getElementById(txtId);
-  el.className = 'lc-badge ' + (mode==='FORCE_ON' ? 'badge-on' : mode==='FORCE_OFF' ? 'badge-off' : 'badge-auto');
-  tx.textContent = mode;
-}
-function setDNBadge(badgeId, txtId, dn) {
-  const el = document.getElementById(badgeId);
-  const tx = document.getElementById(txtId);
-  el.className = 'lc-badge ' + (dn==='NIGHT' ? 'badge-night' : dn==='DAY' ? 'badge-day' : 'badge-unk');
-  tx.textContent = dn;
-}
+function applyLightCard(prefix,key,data){
+  const isOn=data.status==='ON';
+  const card=document.getElementById('card-'+prefix);
+  card.className='light-card '+(isOn?'is-on':'is-off');
 
-function updateRadioHighlight(light, mode) {
-  const prefix = light==='light1' ? 'l1' : 'l2';
-  ['on','off','auto'].forEach(o => {
-    document.getElementById(`${prefix}-opt-${o}`).style.opacity = '0.45';
-    document.getElementById(`${prefix}-opt-${o}`).style.transform = 'scale(0.97)';
+  const icon=document.getElementById('icon-'+prefix);
+  icon.className='lc-icon '+(isOn?'on':'off');
+
+  const pill=document.getElementById('pill-'+prefix);
+  const ptxt=document.getElementById('pill-'+prefix+'-txt');
+  pill.className='lc-status-pill '+(isOn?'sp-on':data.status==='OFF'?'sp-off':'sp-unk');
+  ptxt.textContent=data.status;
+
+  // Toggle checkbox
+  const tog=document.getElementById(prefix+'-toggle');
+  tog.checked=isOn;
+  document.getElementById(prefix+'-toggle-lbl').textContent=isOn?'Light is on':'Light is off';
+  document.getElementById(prefix+'-toggle-sub').textContent=data.mode==='AUTO'?'Auto-controlled by sensor':'Manually overridden';
+
+  // Mode pills highlight
+  const modes={FORCE_ON:'on',FORCE_OFF:'off',AUTO:'auto'};
+  ['on','off','auto'].forEach(m=>{
+    document.getElementById(prefix+'-mp-'+m).classList.remove('active');
   });
-  const active = mode==='FORCE_ON' ? 'on' : mode==='FORCE_OFF' ? 'off' : 'auto';
-  const aEl = document.getElementById(`${prefix}-opt-${active}`);
-  if (aEl) { aEl.style.opacity = '1'; aEl.style.transform = 'scale(1)'; }
+  const activeKey=modes[data.mode]||'auto';
+  const activePill=document.getElementById(prefix+'-mp-'+activeKey);
+  if(activePill)activePill.classList.add('active');
+
+  // Update pending to current if not set
+  if(!S.pending[key])S.pending[key]=data.mode;
 }
 
-/* ── DB TREE VIEWER ── */
-function renderDBTree(data, indent=0) {
-  if (data === null || data === undefined) return '<span style="color:var(--dim)">null</span>';
-  if (typeof data === 'string')  return `<span style="color:#a8d8a8">"${data}"</span>`;
-  if (typeof data === 'number')  return `<span style="color:var(--solar)">${data}</span>`;
-  if (typeof data === 'boolean') return `<span style="color:#b48eff">${data}</span>`;
-  if (typeof data === 'object') {
-    const pad = '  '.repeat(indent);
-    const entries = Object.entries(data).map(([k,v]) =>
-      `${pad}  <span style="color:var(--cyan)">"${k}"</span>: ${renderDBTree(v, indent+1)}`
-    ).join(',\n');
-    return `<span style="color:rgba(255,255,255,.3)">{</span>\n${entries}\n${pad}<span style="color:rgba(255,255,255,.3)">}</span>`;
-  }
-  return String(data);
+/* ── Interaction handlers ── */
+function handleToggle(light,checked){
+  const mode=checked?'FORCE_ON':'FORCE_OFF';
+  S.pending[light]=mode;
+  db.ref(`/${light}/mode`).set(mode)
+    .then(()=>toast(`${light==='light1'?'Light 1':'Light 2'} turned ${checked?'ON':'OFF'}`,checked?'ok':'wrn'))
+    .catch(e=>toast('Failed: '+e.message,'err'));
 }
 
-function refreshDB() {
-  db.ref('/').once('value', snap => {
-    const data = snap.val();
-    const liveEl = document.getElementById('db-tree-live');
-    if (!data) {
-      liveEl.innerHTML = '<span style="color:var(--dim)">No data in database yet. Waiting for ESP32…</span>';
-      return;
-    }
-    liveEl.innerHTML = renderDBTree(data);
-  }).catch(e => {
-    document.getElementById('db-tree-live').textContent = 'Error: ' + e.message;
-  });
+function pickMode(light,mode){
+  S.pending[light]=mode;
+  const prefix=light==='light1'?'l1':'l2';
+  const modes={FORCE_ON:'on',FORCE_OFF:'off',AUTO:'auto'};
+  ['on','off','auto'].forEach(m=>document.getElementById(prefix+'-mp-'+m).classList.remove('active'));
+  document.getElementById(prefix+'-mp-'+modes[mode]).classList.add('active');
+  toast('Mode selected: '+mode.replace('_',' ').toLowerCase(),'inf');
 }
 
-/* ── FIREBASE LISTENERS ── */
-db.ref('.info/connected').on('value', snap => {
-  const conn = snap.val() === true;
-  const pill = document.getElementById('fb-pill');
-  const txt  = document.getElementById('fb-pill-txt');
-  if (conn) {
-    pill.className = 'pill conn';
-    txt.textContent = 'Firebase Live';
-    toast('Firebase connected ✓', 'success');
-  } else {
-    pill.className = 'pill disc';
-    txt.textContent = 'Disconnected';
-    toast('Firebase disconnected — retrying', 'warning');
-  }
+function applyMode(light){
+  const mode=S.pending[light];
+  if(!mode||mode==='—'){toast('Pick a mode first','wrn');return;}
+  db.ref(`/${light}/mode`).set(mode)
+    .then(()=>toast(`✓ ${light==='light1'?'Light 1':'Light 2'} → ${mode.replace('_',' ')}`, 'ok'))
+    .catch(e=>toast('Write failed: '+e.message,'err'));
+}
+
+function setBoth(mode){
+  Promise.all([db.ref('/light1/mode').set(mode),db.ref('/light2/mode').set(mode)])
+    .then(()=>toast('Both lights → '+mode.replace(/_/g,' ').toLowerCase(),'ok'))
+    .catch(e=>toast('Failed: '+e.message,'err'));
+}
+
+function writeSensor(val){
+  db.ref('/daynight').set(val)
+    .then(()=>toast('Sensor override → '+val,'ok'))
+    .catch(e=>toast('Failed: '+e.message,'err'));
+}
+
+/* ── Firebase listeners ── */
+db.ref('.info/connected').on('value',snap=>{
+  const c=snap.val()===true;
+  const p=document.getElementById('conn-pill');
+  const t=document.getElementById('conn-txt');
+  p.className='conn-badge '+(c?'live':'off');
+  t.textContent=c?'Live':'Offline';
+  if(c)toast('Connected to Firebase','ok');
+  else toast('Firebase disconnected','err');
 });
 
-db.ref('/').on('value', snap => {
-  const data = snap.val();
-  if (!data) return;
-
-  const l1 = data.light1 || data.Light1 || data.streetlight1 || {};
-  const l2 = data.light2 || data.Light2 || data.streetlight2 || {};
-  const dn = String(data.daynight || data.DayNight || data.day_night || '').toUpperCase();
-
-  S.light1.status = nStatus(l1.status || l1.Status || l1.state);
-  S.light1.mode   = nMode(l1.mode   || l1.Mode   || l1.control);
-  S.light2.status = nStatus(l2.status || l2.Status || l2.state);
-  S.light2.mode   = nMode(l2.mode   || l2.Mode   || l2.control);
-  S.dayNight = dn.includes('NIGHT') ? 'NIGHT' : dn.includes('DAY') ? 'DAY' : dn || '—';
-
+db.ref('/').on('value',snap=>{
+  const data=snap.val();
+  if(!data)return;
+  const l1=data.light1||data.Light1||data.streetlight1||{};
+  const l2=data.light2||data.Light2||data.streetlight2||{};
+  const dn=String(data.daynight||data.DayNight||data.day_night||'').toUpperCase();
+  S.light1.status=nS(l1.status||l1.Status||l1.state);
+  S.light1.mode=nM(l1.mode||l1.Mode||l1.control);
+  S.light2.status=nS(l2.status||l2.Status||l2.state);
+  S.light2.mode=nM(l2.mode||l2.Mode||l2.control);
+  S.dayNight=dn.includes('NIGHT')?'NIGHT':dn.includes('DAY')?'DAY':dn||'—';
   updateUI();
+},err=>toast('DB error: '+err.message,'err'));
 
-  // Auto-refresh DB viewer if on that tab
-  if (document.getElementById('tab-db').classList.contains('active')) refreshDB();
-}, err => toast('Firebase error: ' + err.message, 'error'));
-
-/* ── CONTROLS ── */
-let pendingMode = { light1: null, light2: null };
-
-function selectMode(light, mode) {
-  pendingMode[light] = mode;
-  toast(`${light.toUpperCase()} pending: ${mode}`, 'info');
-}
-
-function sendMode(light) {
-  const mode = pendingMode[light] || S[light].mode;
-  if (!mode || mode === '—') { toast('Please select a mode first', 'warning'); return; }
-  db.ref(`/${light}/mode`).set(mode)
-    .then(() => toast(`✓ ${light.toUpperCase()} mode → ${mode}`, 'success'))
-    .catch(e => toast('Write failed: ' + e.message, 'error'));
-}
-
-function resetToAuto(light) {
-  pendingMode[light] = 'AUTO';
-  db.ref(`/${light}/mode`).set('AUTO')
-    .then(() => toast(`✓ ${light.toUpperCase()} reset to AUTO`, 'success'))
-    .catch(e => toast('Write failed: ' + e.message, 'error'));
-}
-
-function setBoth(mode) {
-  Promise.all([
-    db.ref('/light1/mode').set(mode),
-    db.ref('/light2/mode').set(mode)
-  ]).then(() => toast(`✓ Both lights → ${mode}`, 'success'))
-    .catch(e => toast('Write failed: ' + e.message, 'error'));
-}
-
-function writeDayNight() {
-  const val = document.getElementById('dn-sel').value;
-  db.ref('/daynight').set(val)
-    .then(() => toast(`✓ Day/Night → ${val}`, 'success'))
-    .catch(e => toast('Write failed: ' + e.message, 'error'));
-}
-
-/* ── CUSTOM WRITE ── */
-function customWrite() {
-  const path = document.getElementById('custom-path').value.trim();
-  const val  = document.getElementById('custom-val').value.trim();
-  let valid = true;
-
-  const pErr = document.getElementById('path-err');
-  const vErr = document.getElementById('val-err');
-  pErr.classList.remove('show'); vErr.classList.remove('show');
-  document.getElementById('custom-path').classList.remove('err');
-  document.getElementById('custom-val').classList.remove('err');
-
-  if (!path || !path.startsWith('/')) {
-    pErr.classList.add('show');
-    document.getElementById('custom-path').classList.add('err');
-    valid = false;
+/* ── Demo seed if no ESP32 ── */
+let seeded=false;
+db.ref('/').once('value',s=>{if(s.val())seeded=true;});
+setTimeout(()=>{
+  if(!seeded){
+    S.light1={status:'ON',mode:'AUTO'};
+    S.light2={status:'OFF',mode:'AUTO'};
+    S.dayNight='NIGHT';
+    updateUI();
+    toast('Demo mode — no ESP32 data yet','wrn');
   }
-  if (!val) {
-    vErr.classList.add('show');
-    document.getElementById('custom-val').classList.add('err');
-    valid = false;
-  }
-  if (!valid) return;
-
-  db.ref(path).set(val)
-    .then(() => toast(`✓ Written: ${path} = "${val}"`, 'success'))
-    .catch(e => toast('Write failed: ' + e.message, 'error'));
-}
-
-/* ── API KEY TOGGLE ── */
-function toggleApiKey() {
-  const inp = document.getElementById('api-key-inp');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-}
-
-/* ── INIT ── */
-refreshDB();
+},3000);
 </script>
 </body>
 </html>
